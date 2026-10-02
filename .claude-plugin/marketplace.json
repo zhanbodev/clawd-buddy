@@ -1,0 +1,21 @@
+{
+  "name": "clawd-spinner",
+  "description": "Clawd Spinner: a Claude Code mod that brings Clawd, the pixel mascot, into your terminal",
+  "owner": {
+    "name": "zhanbodev",
+    "url": "https://github.com/zhanbodev"
+  },
+  "plugins": [
+    {
+      "name": "clawd-spinner",
+      "source": "./",
+      "description": "Clawd, Claude Code's pixel mascot, lives above your prompt: it acts out what Claude is doing, bubbles code while it types, dances to your music, and hops when you click it",
+      "category": "fun",
+      "tags": [
+        "mod",
+        "mascot",
+        "animation"
+      ]
+    }
+  ]
+}

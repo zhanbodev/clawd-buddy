@@ -132,6 +132,15 @@ claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API �
 - `auto` 在 `session.start` 时按 `LC_ALL` → `LC_MESSAGES` → `LANG` 的顺序取第一个有值的,以 `zh` 开头用中文,否则英文(都没设也是英文)。
 - 一个包同时支持两种语言,不拆包分发。
 
+## 发布
+
+- 仓库本身就是插件市场:`.claude-plugin/marketplace.json`(市场名 `clawd-spinner`,唯一的插件 `source: "./"` 指向仓库根目录)。安装:`/plugin marketplace add zhanbodev/clawd-spinner`,再 `/plugin install clawd-spinner@clawd-spinner`。
+- `plugin.json` 里写了 `version`,用户会停在这个版本,**发新版必须改版本号**,用户再 `claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner`。
+- 发版步骤:改 `plugin.json` 的 `version` → `claude plugin validate .claude-plugin/plugin.json` 和 `claude plugin validate .`(后者检查市场清单)→ 提交推送 → `git tag vX.Y.Z` 推送 → `gh release create vX.Y.Z`。
+- 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
+- 本机 `~/.claude/skills/clawd-spinner` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
+- v1.0.0:2026-10-03 首个正式版。
+
 ## 迭代历史
 
 记录这些是为了以后不再走同样的弯路。

@@ -67,7 +67,37 @@ You need:
 - **The terminal**. The Desktop app keeps its own spinner and shows no Clawd.
 - For **music mode** only: macOS 14.2 or later, and the Xcode command line tools (`xcode-select --install`).
 
-Download it, then start Claude Code with `--plugin-dir` to see Clawd:
+### From the plugin marketplace
+
+In Claude Code, add this repository as a marketplace, then install the plugin from it:
+
+```
+/plugin marketplace add zhanbodev/clawd-spinner
+```
+
+```
+/plugin install clawd-spinner@clawd-spinner
+```
+
+Or from your shell:
+
+```bash
+claude plugin marketplace add zhanbodev/clawd-spinner
+```
+
+```bash
+claude plugin install clawd-spinner@clawd-spinner
+```
+
+Clawd appears in your next session. To get a newer release later:
+
+```bash
+claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner
+```
+
+### From source
+
+To hack on it, clone it and start Claude Code with `--plugin-dir`:
 
 ```bash
 git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
@@ -77,7 +107,7 @@ git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
 claude --plugin-dir ~/mods/clawd-spinner
 ```
 
-To have Clawd in every session without the flag, add this to `~/.claude/settings.json`, with your own absolute path:
+To load your copy in every session without the flag, add this to `~/.claude/settings.json`, with your own absolute path:
 
 ```json
 {
@@ -142,7 +172,9 @@ claude plugin validate .        # Static check: the events and APIs the mod uses
 
 ```
 clawd-spinner/
-├── .claude-plugin/plugin.json   Manifest: name, version, the language setting
+├── .claude-plugin/
+│   ├── plugin.json              Manifest: name, version, the language setting
+│   └── marketplace.json         Makes this repository a marketplace you can install from
 ├── hooks/
 │   ├── hooks.json               Points to register.js
 │   ├── register.js              Every animation and all the logic

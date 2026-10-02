@@ -67,7 +67,37 @@
 - **在终端里使用**。Desktop 应用里不显示,保持原样。
 - **音乐模式**另外需要 macOS 14.2 以上,以及 Xcode Command Line Tools(`xcode-select --install`)。
 
-下载后,带上 `--plugin-dir` 启动 Claude Code 就能看到 Clawd:
+### 从插件市场安装
+
+在 Claude Code 里先把这个仓库添加为插件市场,再从里面安装:
+
+```
+/plugin marketplace add zhanbodev/clawd-spinner
+```
+
+```
+/plugin install clawd-spinner@clawd-spinner
+```
+
+也可以在终端里执行:
+
+```bash
+claude plugin marketplace add zhanbodev/clawd-spinner
+```
+
+```bash
+claude plugin install clawd-spinner@clawd-spinner
+```
+
+下次打开 Claude Code 就能看到 Clawd。以后有新版本时更新:
+
+```bash
+claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner
+```
+
+### 从源码运行
+
+想改代码的话,clone 下来,带上 `--plugin-dir` 启动 Claude Code:
 
 ```bash
 git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
@@ -77,7 +107,7 @@ git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
 claude --plugin-dir ~/mods/clawd-spinner
 ```
 
-想让它每次都在,不用每次带参数:在 `~/.claude/settings.json` 里加上下面这段(路径换成你自己的,要写绝对路径):
+想让这份源码每次都加载,不用每次带参数:在 `~/.claude/settings.json` 里加上下面这段(路径换成你自己的,要写绝对路径):
 
 ```json
 {
@@ -142,7 +172,9 @@ claude plugin validate .        # 静态检查:用到的事件和 API
 
 ```
 clawd-spinner/
-├── .claude-plugin/plugin.json   清单:名字、版本、语言设置
+├── .claude-plugin/
+│   ├── plugin.json              清单:名字、版本、语言设置
+│   └── marketplace.json         让这个仓库成为可以安装的插件市场
 ├── hooks/
 │   ├── hooks.json               指向 register.js
 │   ├── register.js              全部动画和逻辑
