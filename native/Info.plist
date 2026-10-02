@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Linked into clawd-ears as its __info_plist section, so macOS knows what the program is and
+     why it asks to record system audio when it asks in its own name. -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>dev.clawd-spinner.clawd-ears</string>
+  <key>CFBundleName</key>
+  <string>clawd-ears</string>
+  <key>NSAudioCaptureUsageDescription</key>
+  <string>Clawd 跟着你正在播放的音乐跳舞:只读取声音有多响,不录音、不保存。Clawd dances to what you're playing: it reads only how loud it is, and records and keeps nothing.</string>
+</dict>
+</plist>

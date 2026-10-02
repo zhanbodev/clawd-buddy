@@ -1,0 +1,21 @@
+{
+  "name": "clawd-spinner",
+  "version": "0.2.0",
+  "description": "An animated pixel-art Claude Code mascot that lives above the prompt and acts out what Claude is doing",
+  "author": {
+    "name": "Your Name"
+  },
+  "userConfig": {
+    "language": {
+      "type": "string",
+      "title": "Language / 语言",
+      "description": "Language of the captions beside Clawd. auto follows your locale (LC_ALL, LC_MESSAGES, LANG): Chinese for zh_*, English otherwise. 小人旁边文字的语言,auto 跟随系统 locale。",
+      "options": [
+        "auto",
+        "zh",
+        "en"
+      ],
+      "default": "auto"
+    }
+  }
+}
