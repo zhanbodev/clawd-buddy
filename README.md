@@ -1,72 +1,73 @@
 <h1 align="center">Clawd Spinner</h1>
 
+<p align="center"><b>English</b> | <a href="README.zh-CN.md">中文</a></p>
+
 <p align="center">
-  <img src="docs/images/poke.gif" width="480" alt="Clawd 站在输入框上方,被点了一下:举手跳起、眨眼、东张西望">
+  <img src="docs/images/poke.gif" width="480" alt="Clawd above the prompt, clicked: it hops with its arms up, winks and looks around">
 </p>
 
 <p align="center">
-  让 Claude Code 的像素小吉祥物 <b>Clawd</b> 住进你的终端。<br>
-  它站在输入框上方,跟着 Claude 的工作切换动作,会冒代码泡泡,会听歌跳舞,点它一下还会跳起来。
+  Bring <b>Clawd</b>, Claude Code's pixel mascot, into your terminal.<br>
+  It lives above the prompt, acts out whatever Claude is doing, bubbles code while it types, dances to your music, and hops when you click it.
 </p>
 
 <p align="center">
-  <a href="#安装">安装</a> ·
-  <a href="#命令">命令</a> ·
-  <a href="#音乐模式">音乐模式</a> ·
-  <a href="#设置">设置</a> ·
-  <a href="#开发">开发</a> ·
-  <a href="#english">English</a>
+  <a href="#install">Install</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#music-mode">Music mode</a> ·
+  <a href="#settings">Settings</a> ·
+  <a href="#development">Development</a>
 </p>
 
 ---
 
-## 它会做什么
+## What it does
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/typing.gif" alt="Clawd 侧身在笔记本上打字,头顶冒出代码泡泡"><br>
-      <b>写代码</b><br>
-      Claude 编辑文件时,Clawd 侧身敲着一台小笔记本,头顶不停冒出 <code>{}</code> <code>&lt;/&gt;</code> <code>;</code> 这样的代码泡泡。
+      <img src="docs/images/typing.gif" alt="Clawd typing on a laptop, side on, with code bubbles rising from its head"><br>
+      <b>Writing code</b><br>
+      While Claude edits a file, Clawd sits side on at a little laptop, typing away, with bits of code like <code>{}</code> <code>&lt;/&gt;</code> <code>;</code> bubbling up from its head.
     </td>
     <td width="50%">
-      <img src="docs/images/poses.gif" alt="Clawd 依次思考、举着纸阅读、小跑、拿放大镜搜索"><br>
-      <b>思考 · 阅读 · 运行 · 搜索</b><br>
-      动作跟着 Claude 正在用的工具变:想事情时冒思考点点,读文件举着一页纸,跑命令一路小跑,搜索时举着放大镜。
+      <img src="docs/images/poses.gif" alt="Clawd thinking, reading a page, running, and searching with a magnifying glass"><br>
+      <b>Thinking · Reading · Running · Searching</b><br>
+      Its pose follows the tool Claude is using: thought dots while it thinks, a page held up while it reads, a run while a command runs, a magnifying glass while it searches.
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <img src="docs/images/dance.gif" alt="Clawd 戴着耳机跟着节拍跳动,音符从耳罩冒出"><br>
-      <b>音乐模式</b><br>
-      戴上耳机,跟着这台 Mac 正在播放的音乐节拍跳,音符从两侧耳罩往上飘。
+      <img src="docs/images/dance.gif" alt="Clawd in headphones bouncing to the beat, music notes rising from the ear cups"><br>
+      <b>Music mode</b><br>
+      Headphones on, it bounces to the beat of whatever your Mac is playing, with notes floating up from its ear cups.
     </td>
     <td width="50%">
-      <img src="docs/images/celebrate.gif" alt="任务完成后的派对和烟花"><br>
-      <b>完成庆祝</b><br>
-      一次回答超过 5 秒,结束时随机来一段派对或烟花。
+      <img src="docs/images/celebrate.gif" alt="A party, then fireworks, when a task is done"><br>
+      <b>Celebrations</b><br>
+      When an answer took more than 5 seconds, it ends with a party or fireworks, picked at random.
     </td>
   </tr>
 </table>
 
-还有这些小细节:
+And a few small touches:
 
-- **一直都在**:空闲时它站在输入框右上方,偶尔眨眼、左右看看。
-- **点它一下**:举手跳起、右眼眨一下、东张西望、两只眼睛到处转。
-- **选不中**:用鼠标拖选文字时不会把 Clawd 选进去,复制不到它。
-- **说人话**:旁边写着"编辑中… · register.js",只显示文件名,不显示其他任何工具输入。
-- **中英双语**:跟随系统语言,也可以手动指定。
-- **零成本**:不调用任何模型,也不联网。
+- **Always there**: while Claude waits for you, Clawd stands at the right end of the prompt, blinking and glancing around now and then.
+- **Click it**: it hops with its arms up, winks its right eye, glances to each side, and rolls its eyes all around.
+- **Not selectable**: dragging to select text never picks up Clawd, so it never ends up in what you copy.
+- **Plain captions**: beside it reads something like "Editing… · register.js". Only the file's name is shown, never anything else from a tool's input.
+- **English and Chinese**: follows your system language, or pick one yourself.
+- **Free**: calls no model and uses no network.
 
-## 安装
+## Install
 
-需要:
+You need:
 
-- **Claude Code 2.1.287 或更高版本**(从这个版本开始支持 mod)。
-- **在终端里使用**。Desktop 应用里不显示,保持原样。
-- **音乐模式**另外需要 macOS 14.2 以上,以及 Xcode Command Line Tools(`xcode-select --install`)。
+- **Claude Code 2.1.287 or later**, the first version that supports mods.
+- **The terminal**. The Desktop app keeps its own spinner and shows no Clawd.
+- For **music mode** only: macOS 14.2 or later, and the Xcode command line tools (`xcode-select --install`).
 
-下载后,带上 `--plugin-dir` 启动 Claude Code 就能看到 Clawd:
+Download it, then start Claude Code with `--plugin-dir` to see Clawd:
 
 ```bash
 git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
@@ -76,104 +77,86 @@ git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
 claude --plugin-dir ~/mods/clawd-spinner
 ```
 
-想让它每次都在,不用每次带参数:在 `~/.claude/settings.json` 里加上下面这段(路径换成你自己的,要写绝对路径):
+To have Clawd in every session without the flag, add this to `~/.claude/settings.json`, with your own absolute path:
 
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/你的用户名/mods/clawd-spinner"
+    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/you/mods/clawd-spinner"
   }
 }
 ```
 
-改了代码会自动重新加载,不用重启。
+Changes to the code reload by themselves, with no restart.
 
-## 命令
+## Commands
 
-在 Claude Code 里输入,Claude 正在回答时也能用:
+Type them in Claude Code. They work while Claude is answering, too.
 
-| 命令 | 作用 |
+| Command | What it does |
 | :-- | :-- |
-| `/clawd-spinner show` | 让 Clawd 出来 |
-| `/clawd-spinner hidden` | 把 Clawd 藏起来,下次打开 Claude Code 也还是藏着 |
-| `/clawd-spinner startmusic` | 开启音乐模式 |
-| `/clawd-spinner stopmusic` | 关闭音乐模式 |
+| `/clawd-spinner show` | Brings Clawd back |
+| `/clawd-spinner hidden` | Hides Clawd. It stays hidden in later sessions too |
+| `/clawd-spinner startmusic` | Turns music mode on |
+| `/clawd-spinner stopmusic` | Turns music mode off |
 
-## 音乐模式
+## Music mode
 
-**怎么开**
+**Turn it on**
 
-1. 先放一首歌,然后输入 `/clawd-spinner startmusic`。第一次会花几秒钟编译一个听音乐的小程序,之后就直接用了。
-2. macOS 会弹窗问 **clawd-ears 是否可以录制系统音频**,点"允许"。
-3. Clawd 戴上耳机,开始跟着节拍跳。
+1. Play some music, then run `/clawd-spinner startmusic`. The first time, it takes a few seconds to build the small program that listens.
+2. macOS asks whether **clawd-ears may record system audio**. Click Allow.
+3. Clawd puts its headphones on and starts dancing to the beat.
 
-**没弹窗,或者之前点了不允许?**
+**No prompt, or you clicked Don't Allow?**
 
-打开 **系统设置 → 隐私与安全性 → 录屏与系统录音**,在下方"仅系统录音"列表里找到 **clawd-ears**,把开关打开。然后输入 `/clawd-spinner stopmusic`,再输入 `/clawd-spinner startmusic`。
+Open **System Settings → Privacy & Security → Screen & System Audio Recording**, find **clawd-ears** in the "System Audio Recording Only" list below, and switch it on. Then run `/clawd-spinner stopmusic` and `/clawd-spinner startmusic`.
 
-**它听到了什么**
+**What it hears**
 
-- 用 macOS 的 Core Audio 读取"这台 Mac 正在播放的声音",**不使用麦克风**。
-- 每 50 毫秒只算一次音量,再判断有没有节拍。声音本身不保存、不上传,也不离开这个小程序。
-- 只在音乐模式开着时运行,关掉马上退出。实测约 22 MB 内存,CPU 接近 0。
+- It reads what your Mac is playing through Core Audio. It **never uses the microphone**.
+- Every 50 ms it works out only how loud the sound is, and whether a beat landed. The audio itself is never saved or sent, and never leaves that small program.
+- The program runs only while music mode is on, and quits the moment you turn it off. It uses about 22 MB of memory and close to no CPU.
 
-## 设置
+## Settings
 
-在 `/config` 里找到 **Language / 语言**:
+In `/config`, find **Language / 语言**:
 
-| 值 | 效果 |
+| Value | Effect |
 | :-- | :-- |
-| `auto`(默认) | 跟随系统语言:`LC_ALL`、`LC_MESSAGES`、`LANG` 里第一个设了的值以 `zh` 开头就用中文,否则英文 |
-| `zh` | 中文 |
+| `auto` (default) | Follows your system language: Chinese when the first of `LC_ALL`, `LC_MESSAGES` and `LANG` that's set starts with `zh`, English otherwise |
+| `zh` | Chinese |
 | `en` | English |
 
-## 它是怎么画出来的
+## How it's drawn
 
-- Clawd 用"四分块"字符(`▘ ▝ ▀ ▖ ▌ ▞ ▛ ▗ ▚ ▐ ▜ ▄ ▙ ▟ █`)画:一个字符格装 2×2 个像素,和 Claude Code 自己画 logo 的方式一样,造型也是照着官方 logo 逐像素复刻的。
-- 它画在 mod 的"输入框上方区域"里,外面套了一个 `Client` 区域。鼠标在它上面按下时由它接管,所以既能响应点击,又不会被选中复制。
-- 每 150 毫秒一帧,只在工作、庆祝、跳舞或被点的时候持续重绘;空闲时只在眨眼、转头那一下才重绘。
+- Clawd is drawn with quadrant block characters (`▘ ▝ ▀ ▖ ▌ ▞ ▛ ▗ ▚ ▐ ▜ ▄ ▙ ▟ █`), four pixels to a character cell, the way Claude Code draws its own logo. Its shape is copied pixel for pixel from that logo.
+- It's drawn in the mod band above the prompt, inside a `Client` region. A press on the region goes to Clawd, so it can answer clicks and can't be selected.
+- A frame lasts 150 ms. Clawd redraws every frame only while it works, celebrates, dances or reacts to a click. While it waits, it redraws only when it blinks or glances.
 
-## 开发
+## Development
 
 ```bash
-claude plugin validate .        # 静态检查:用到的事件和 API
+claude plugin validate .        # Static check: the events and APIs the mod uses
 ```
 
 ```
 clawd-spinner/
-├── .claude-plugin/plugin.json   清单:名字、版本、语言设置
+├── .claude-plugin/plugin.json   Manifest: name, version, the language setting
 ├── hooks/
-│   ├── hooks.json               指向 register.js
-│   ├── register.js              全部动画和逻辑
-│   └── clawd-view.js            显示 Clawd、接收点击的 Client 模块
+│   ├── hooks.json               Points to register.js
+│   ├── register.js              Every animation and all the logic
+│   └── clawd-view.js            The Client module that shows Clawd and takes clicks
 ├── native/
-│   ├── clawd-ears.swift         音乐模式的听音小程序
-│   └── Info.plist               它申请"系统录音"权限时的说明
-├── docs/images/                 README 里的动图
-├── tests/                       claude plugin test 用的测试
-└── HANDOFF.md                   设计细节、踩过的坑和待办
+│   ├── clawd-ears.swift         The program music mode listens with
+│   └── Info.plist               The reason it gives when it asks to record system audio
+├── docs/images/                 The animations in this README
+├── tests/                       Tests for claude plugin test
+└── HANDOFF.md                   Design notes, pitfalls and open items (in Chinese)
 ```
 
-设计上的取舍、每一版改了什么、哪些地方还没实测,都记在 [HANDOFF.md](HANDOFF.md) 里。
+The design choices, what each version changed, and what's still untested are in [HANDOFF.md](HANDOFF.md).
 
-## 说明
+## Note
 
-Clawd 是 Anthropic 的 Claude Code 吉祥物。这是一个粉丝自制的 mod,不是 Anthropic 官方出品。
-
----
-
-## English
-
-**Clawd Spinner** is a Claude Code mod that puts Clawd, Claude Code's pixel mascot, above your prompt. It acts out what Claude is doing (thinking, reading, typing with code bubbles, running, searching), celebrates finished tasks, dances to the music your Mac is playing in music mode, and hops and looks around when you click it. It calls no model and uses no network.
-
-```bash
-git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
-```
-
-```bash
-claude --plugin-dir ~/mods/clawd-spinner
-```
-
-Commands: `/clawd-spinner show | hidden | startmusic | stopmusic`. Set the caption language under **Language / 语言** in `/config` (`auto`, `zh`, `en`). Music mode needs macOS 14.2+ and the Xcode command line tools; the first time, allow **clawd-ears** to record system audio. It reads only how loud the playing sound is, never the microphone, and keeps nothing.
-
-Requires Claude Code 2.1.287 or later, in the terminal. Clawd is Anthropic's mascot; this is an unofficial fan project.
+Clawd is the mascot of Anthropic's Claude Code. This is an unofficial mod made by a fan, not a product of Anthropic.
