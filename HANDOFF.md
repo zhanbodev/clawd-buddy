@@ -22,6 +22,10 @@ clawd-spinner/
 ├── tests/clawd.test.ts          点击、隐藏/显示的测试(本机 `claude plugin test` 被功能开关关着,还没跑过)
 ├── hooks/register.js            全部逻辑,约 500 行
 ├── native/clawd-ears.swift     音乐模式的听音小程序(Core Audio Tap),首次开启时编译到 native/build/(已 gitignore)
+├── README.md                    对外的介绍,配图在 docs/images/(由 tools/readme-images.sh 生成)
+├── tools/                       (只在本地,已加入 .gitignore,不进仓库)
+├── tools/render.mjs             预览图和 README 配图共用的渲染代码:像素画转图片、PNG 和 GIF 编码器
+├── tools/readme-images.sh       从代码生成 README 里的 5 张 GIF
 ├── tools/preview.sh             把所有动画帧渲染成一张 PNG,不用启动 Claude Code
 ├── tools/preview-sheet.mjs      preview.sh 用的 PNG 生成器(自带极简 PNG 编码器和 5×7 点阵字,零依赖)
 └── tsconfig.json                Claude Code 自动生成
