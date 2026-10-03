@@ -57,6 +57,13 @@ const NOTES = [
 ]
 // How many frames a note floats up before it's gone
 const NOTE_LIFE = 5
+// In music mode the canvas grows by this many pixels on each side, for a little equalizer of
+// five bars a side, each a pixel wide with a pixel between, standing on the floor
+const EQ_W = 10
+const EQ_BARS = 5
+// The tallest an equalizer bar gets, in pixels; it stays below the notes, which float higher
+const EQ_MAX = 6
+const EQ_COLOR = 0xc4704a
 
 // What the mascot says, in each language the `language` option offers: the caption beside
 // each pose, and the cheers it picks from when a task is done
@@ -65,20 +72,20 @@ const WORDS = {
     poses: { think: '思考中', read: '阅读中', edit: '编辑中', bash: '运行中', search: '搜索中' },
     cheers: ['任务完成!', '搞定啦!', '干得漂亮!', '太棒了!'],
     command: '显示或隐藏 Clawd,或开关音乐模式',
-    usage: '用法:/clawd-spinner show | hidden | startmusic | stopmusic',
+    usage: '用法:/clawd show | hidden | startmusic | stopmusic',
     shown: 'Clawd 出来啦。',
-    hidden: 'Clawd 已隐藏,输入 /clawd-spinner show 让它回来。',
-    hiddenMusic: 'Clawd 已隐藏,音乐模式也一起关了。输入 /clawd-spinner show 让它回来。',
+    hidden: 'Clawd 已隐藏,输入 /clawd show 让它回来。',
+    hiddenMusic: 'Clawd 已隐藏,音乐模式也一起关了。输入 /clawd show 让它回来。',
     building: '第一次开启,正在编译听音乐的小程序…',
     musicOn:
       'Clawd 戴上耳机了,会跟着这台 Mac 正在播放的音乐摇摆。只读取声音有多响,不用麦克风,也不保存任何声音。\n' +
       '第一次开启时,macOS 会弹窗问"clawd-ears"能否录制系统音频,点"允许"即可。\n' +
       '如果放着音乐 Clawd 却不动(比如之前点了不允许):打开 系统设置 → 隐私与安全性 → 录屏与系统录音,' +
-      '在下方"仅系统录音"列表里找到 clawd-ears 并打开开关,然后输入 /clawd-spinner stopmusic 再 /clawd-spinner startmusic。',
+      '在下方"仅系统录音"列表里找到 clawd-ears 并打开开关,然后输入 /clawd stopmusic 再 /clawd startmusic。',
     musicAlready: '音乐模式已经开着了。',
     musicOff: '音乐模式已关闭,耳机摘下来了。',
     musicNotOn: '音乐模式本来就是关着的。',
-    musicHidden: 'Clawd 现在是隐藏的,先输入 /clawd-spinner show。',
+    musicHidden: 'Clawd 现在是隐藏的,先输入 /clawd show。',
     musicFailed: '音乐模式开不了:',
     musicStopped: 'Clawd 的音乐模式停了:',
   },
@@ -86,20 +93,20 @@ const WORDS = {
     poses: { think: 'Thinking', read: 'Reading', edit: 'Editing', bash: 'Running', search: 'Searching' },
     cheers: ['All done!', 'Nailed it!', 'Great job!', 'Awesome!'],
     command: 'Show or hide Clawd, or turn music mode on or off',
-    usage: 'Usage: /clawd-spinner show | hidden | startmusic | stopmusic',
+    usage: 'Usage: /clawd show | hidden | startmusic | stopmusic',
     shown: 'Clawd is back.',
-    hidden: 'Clawd is hidden. Run /clawd-spinner show to bring it back.',
-    hiddenMusic: 'Clawd is hidden, and music mode is off too. Run /clawd-spinner show to bring it back.',
+    hidden: 'Clawd is hidden. Run /clawd show to bring it back.',
+    hiddenMusic: 'Clawd is hidden, and music mode is off too. Run /clawd show to bring it back.',
     building: 'First time on: building the little program that listens to the music…',
     musicOn:
       'Clawd has its headphones on and moves to whatever this Mac is playing. It reads only how loud the sound is, never the microphone, and keeps no audio.\n' +
       'The first time, macOS asks whether "clawd-ears" may record system audio: click Allow.\n' +
       'If music plays and Clawd stays still (say you clicked Don\'t Allow): open System Settings → Privacy & Security → Screen & System Audio Recording, ' +
-      'find clawd-ears in the "System Audio Recording Only" list and switch it on, then run /clawd-spinner stopmusic and /clawd-spinner startmusic.',
+      'find clawd-ears in the "System Audio Recording Only" list and switch it on, then run /clawd stopmusic and /clawd startmusic.',
     musicAlready: 'Music mode is already on.',
     musicOff: 'Music mode is off, and the headphones are off.',
     musicNotOn: 'Music mode was already off.',
-    musicHidden: 'Clawd is hidden. Run /clawd-spinner show first.',
+    musicHidden: 'Clawd is hidden. Run /clawd show first.',
     musicFailed: "Music mode couldn't start: ",
     musicStopped: "Clawd's music mode stopped: ",
   },
@@ -276,8 +283,9 @@ function drawNote(grid, shape, x, y, color) {
 // each { born, side, shape, color }. On a beat it hops a pixel and steps its feet, and it
 // blinks once every few seconds. Notes rise from its ear cups and drift out.
 function danceFrame(t, dance) {
-  const grid = blank(SW, SH)
-  const ox = 4
+  const grid = blank(SW + EQ_W * 2, SH)
+  const ox = EQ_W + 4
+  drawEqualizer(grid, t, dance)
   const top = TOP - (t === dance.beatAt ? 1 : 0)
   drawClawd(grid, { ox, top, blink: t % 30 === 29, legStep: dance.beats > 0 ? 1 + (dance.beats & 1) : 0 })
   drawHeadphones(grid, ox, top)
@@ -287,6 +295,21 @@ function danceFrame(t, dance) {
     drawNote(grid, NOTES[note.shape], x, TOP - 3 - age, note.color)
   }
   return grid
+}
+
+// The equalizer bars at both sides of the dancing mascot. Each bar stands as tall as the
+// music is loud, give or take a pixel of its own each frame, and every bar jumps a pixel on a
+// beat. In silence they lie flat, a pixel tall.
+function drawEqualizer(grid, t, dance) {
+  const width = grid[0].length
+  const loud = (dance.level / 9) * (EQ_MAX - 1)
+  const jump = t === dance.beatAt ? 1 : 0
+  for (let i = 0; i < EQ_BARS * 2; i += 1) {
+    const x = i < EQ_BARS ? i * 2 : width - 1 - (i - EQ_BARS) * 2
+    const wobble = dance.level > 0 ? ((hash(hash(t * 16 + i) >>> 16) >>> 16) % 3) - 1 : 0
+    const height = Math.max(1, Math.min(EQ_MAX, Math.round(1 + loud + wobble + jump)))
+    rect(grid, x, SH - height, 1, height, EQ_COLOR)
+  }
 }
 
 // The working mascot's pixel grid for a pose at animation step t, in headphones while music
@@ -360,15 +383,17 @@ const POKE = [
   [0, -1, 0, false], [0, -1, 1, false], [0, 0, 1, false], [0, 1, 1, false], [0, 0, 0, false],
 ]
 
-// The mascot reacting to a click, at frame i of POKE. In music mode it keeps its headphones on
-// and its place on the dancing canvas.
-function pokeFrame(i, phones = false) {
+// The mascot reacting to a click, at frame i of POKE. In music mode, given the music as
+// danceFrame takes it, it keeps its headphones on, its place on the dancing canvas, and the
+// equalizer beside it.
+function pokeFrame(i, phones = false, dance = null) {
   const [hop, eyeShift, eyeDrop, wink] = POKE[i]
   const height = phones ? SH : IDLE_H
-  const ox = phones ? 4 : 2
+  const ox = phones ? EQ_W + 4 : 2
   const top = height - 5 - hop
   const arm = hop === 2 ? 'up' : 'down'
-  const grid = blank(SW, height)
+  const grid = blank(phones ? SW + EQ_W * 2 : SW, height)
+  if (phones && dance) drawEqualizer(grid, i, dance)
   drawClawd(grid, { ox, top, eyeShift, eyeDrop, wink, armL: arm, armR: arm })
   if (phones) drawHeadphones(grid, ox, top)
   return grid
@@ -550,7 +575,7 @@ let turnStartedAt = 0
 // The celebration on screen, or null: which one, what it says, and how far it has played
 let celebration = null
 let celebrationStep = 0
-// Hidden with /clawd-spinner hidden, which lasts across sessions
+// Hidden with /clawd hidden, which lasts across sessions
 let hidden = false
 // While the mascot reacts to a click, the frame of POKE it's on; else -1
 let poke = -1
@@ -679,7 +704,7 @@ export function register(on, options) {
     WORDS_NOW = words
     hidden = (await $.store.get('hidden')) === true
     await $.command.register({
-      name: 'clawd-spinner',
+      name: 'clawd',
       description: words.command,
       argumentHint: 'show | hidden | startmusic | stopmusic',
       immediate: true,
@@ -777,8 +802,8 @@ export function register(on, options) {
     return next(e)
   })
 
-  // /clawd-spinner show | hidden | startmusic | stopmusic
-  on('command.run', { command: 'clawd-spinner' }, async ($, e) => {
+  // /clawd show | hidden | startmusic | stopmusic
+  on('command.run', { command: 'clawd' }, async ($, e) => {
     const arg = String(e.args || '').trim().toLowerCase()
     let text = words.usage
     if (arg === 'show') {
@@ -824,7 +849,7 @@ export function register(on, options) {
       grid = celebration.kind === 'party' ? partyFrame(celebrationStep) : fireworksFrame(celebrationStep)
       caption = celebration.cheer
     } else if (poke >= 0) {
-      grid = pokeFrame(poke, music !== null)
+      grid = pokeFrame(poke, music !== null, dance)
     } else if (music) {
       grid = danceFrame(step, dance)
     } else {

@@ -1,4 +1,4 @@
-# clawd-spinner 交接文档
+# clawd-buddy 交接文档(原名 clawd-spinner)
 
 > 写于 2026-10-02,来自 suyao 仓库里的一次 Claude Code 会话(“Claude Mods 使用方法”)。
 > 完整原始对话已导出到 `~/Downloads/session-export-1790954591211.zip`,这里是整理后的要点。
@@ -14,8 +14,8 @@
 ## 文件
 
 ```
-clawd-spinner/
-├── .claude-plugin/plugin.json   清单:name=clawd-spinner, version 0.2.0
+clawd-buddy/
+├── .claude-plugin/plugin.json   清单:name=clawd-buddy, version 1.1.0;marketplace.json 让仓库成为插件市场
 ├── .claude-plugin/types/        Claude Code 加载时自动生成的类型声明,别手改
 ├── hooks/hooks.json             {"modules": ["./register.js"]}
 ├── hooks/clawd-view.js          Client 的显示模块:把 register.js 算好的每一帧画出来,并把点击告诉它
@@ -34,9 +34,9 @@ clawd-spinner/
 ## 常用命令
 
 ```bash
-claude --plugin-dir ~/mods/clawd-spinner        # 本次会话加载,改文件后自动热重载
-claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API 调用
-~/mods/clawd-spinner/tools/preview.sh out.png   # 出帧预览图,改完动画先看这个
+claude --plugin-dir ~/mods/clawd-buddy          # 本次会话加载,改文件后自动热重载
+claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API 调用
+~/mods/clawd-buddy/tools/preview.sh out.png     # 出帧预览图,改完动画先看这个
 ```
 
 ## 当前设计(register.js)
@@ -102,11 +102,11 @@ claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API �
 - 为什么用 Client:鼠标在 Client 区域按下后由它接管,终端既不会选中文字也不会滚动,所以 Clawd **选不中、复制不到**;而且只有 Client 能收到点击(`Image` 能画像素但收不到点击,而且 Client 里不能放 Image/Raster)。
 - 左键按下 → `surface.post({ poke: true })` → `ui.message` 钩子把 `poke` 设为 0 → 按 `POKE` 表每帧一步:跳两像素并举手、右眼(屏幕右边那只)眨两帧、左右张望两轮、眼睛往下转一圈,共 26 帧约 4 秒。工作中、庆祝中不响应。眼睛不往上看:头顶那排像素和上面的空像素在同一个终端格里,往上看会把旁边的橙色吃掉。
 - 实机验证:tmux 里往终端发 SGR 鼠标序列 `\e[<0;列;行M` / `\e[<0;列;行m` 就能模拟点击,截屏能看到跳起和眨眼。
-- 注意:`~/.claude/skills/clawd-spinner` 是指向本项目的软链接,不带 `--plugin-dir` 时从那里加载;带 `--plugin-dir` 时那份会因为重名不加载,这是正常的。
+- 注意:`~/.claude/skills/clawd-buddy` 是指向本项目的软链接,不带 `--plugin-dir` 时从那里加载;带 `--plugin-dir` 时那份会因为重名不加载,这是正常的。
 
-### 命令 `/clawd-spinner`
+### 命令 `/clawd`
 
-在 `session.start` 里用 `$.command.register` 注册(`immediate: true`,回答进行中也能用):
+在 `session.start` 里用 `$.command.register` 注册 `clawd`(`immediate: true`,回答进行中也能用):
 
 - `show` / `hidden`(也认 `hide`):显示或隐藏 Clawd。状态存在 `$.store` 的 `hidden`,跨会话保留。隐藏时区域直接 `next(e)`,时钟也不再重绘;隐藏会顺便关掉音乐模式。
 - `startmusic` / `stopmusic`:音乐模式。
@@ -116,7 +116,7 @@ claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API �
 - **听什么**:`native/clawd-ears.swift` 用 Core Audio 的 process tap(macOS 14.2+)读系统正在播放的声音,不碰麦克风。音频不出这个进程,每 50 ms 只算一次响度(vDSP),再用"比前一秒平均响 35% 且在上升、间隔 ≥250 ms"判断节拍。输出一行 `<0-9 响度> <0/1 节拍>`,变化时才输出,静音时每秒一行心跳。实测内存约 16 MB,CPU 约 0%。
 - **怎么跑**:mod 首次 `startmusic` 时用 `xcrun swiftc -O` 编译(约 8 秒,源码比二进制新就重编),再用 `$.process.spawn` 启动、逐行读。`stopmusic` 时退出读取循环就会结束子进程;mod 卸载、会话结束也会结束它;子程序发现父进程没了也会自己退出。
 - **权限**:需要"系统录音"权限。macOS 把权限算在"负责"这个进程的应用头上;从终端启动时那是终端应用(用户用的是 kitty),它的 Info.plist 没写录音用途,macOS 就**不弹窗、直接给静音**。所以 clawd-ears 一启动先用私有的 `responsibility_spawnattrs_setdisclaim` 拉起一个"自己负责自己"的副本(Claude 桌面应用的 disclaimer 也是这么做的),副本共用同一个输出管道;`native/Info.plist`(含 `NSAudioCaptureUsageDescription`)通过 `-sectcreate __TEXT __info_plist` 链进二进制。这样第一次开启会弹窗问"clawd-ears"能否录制系统音频,设置里也会出现 clawd-ears 这一项。外层进程等副本结束、转发 SIGTERM,发现自己的父进程没了就一起退出。两个进程合计约 22 MB。注意:ad-hoc 签名,重新编译后 macOS 可能会再问一次。
-- **画面**:空闲时换成 `danceFrame`(5 行):Clawd 戴银色头带、粉色耳罩的耳机,每个节拍跳起一像素、两脚交替踩,每 30 帧(约 4.5 秒)眨一次眼;音符是像素画(没用 ♪ 字符,它的宽度在 CJK 终端里不确定),从两侧耳罩轮流往上飘,`NOTE_LIFE` 帧后消失。没检测到节拍但响度 ≥3 时,每 6 帧也冒一个音符。工作时照常做工作姿势,只是戴着耳机(`workFrame(pose, t, phones)`;侧面打字用 `drawHeadphonesSide`)。
+- **画面**:空闲时换成 `danceFrame`(5 行):Clawd 戴银色头带、粉色耳罩的耳机,每个节拍跳起一像素、两脚交替踩,每 30 帧(约 4.5 秒)眨一次眼;音符是像素画(没用 ♪ 字符,它的宽度在 CJK 终端里不确定),从两侧耳罩轮流往上飘,`NOTE_LIFE` 帧后消失。没检测到节拍但响度 ≥3 时,每 6 帧也冒一个音符。两侧各有 5 根音乐条(`drawEqualizer`,画布左右各加宽 `EQ_W = 10` 像素,Clawd 跟着右移):高度按响度,每根每帧随机 ±1,节拍那一帧整体再高 1,静音时都是 1 像素。只用已有的响度和节拍,没做真正的频谱,这样不用改听音程序、不用重新编译(重新编译后 macOS 可能要求重新授权)。被点击时的 `pokeFrame` 也画同样的音乐条,避免画面左右跳。工作时照常做工作姿势,只是戴着耳机(`workFrame(pose, t, phones)`;侧面打字用 `drawHeadphonesSide`)。
 - 调试:`xcrun swiftc -O -D DEBUG_EARS ...` 编出的版本会往 stderr 打印每 50 ms 的采样数和响度。用 tmux 测 mod 时,可以临时把 `native/build/clawd-ears` 换成一个循环 `echo "6 1"` 的脚本来模拟节拍。
 
 ### 为什么 Clawd 和输入线之间隔一行
@@ -127,19 +127,20 @@ claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API �
 
 ### 语言设置
 
-- `plugin.json` 的 `userConfig.language`:`auto`(默认)/ `zh` / `en`,在 `/config` 里是一个下拉选择。值存在 `settings.json` 的 `pluginConfigs["clawd-spinner"].options.language`。
+- `plugin.json` 的 `userConfig.language`:`auto`(默认)/ `zh` / `en`,在 `/config` 里是一个下拉选择。值存在 `settings.json` 的 `pluginConfigs["clawd-buddy@clawd-buddy"].options.language`(用 `--plugin-dir` 加载时是 `clawd-buddy@inline`)。
 - 文字都在 `WORDS` 表里(姿势提示 + 庆祝语),加语言只要加一组。
 - `auto` 在 `session.start` 时按 `LC_ALL` → `LC_MESSAGES` → `LANG` 的顺序取第一个有值的,以 `zh` 开头用中文,否则英文(都没设也是英文)。
 - 一个包同时支持两种语言,不拆包分发。
 
 ## 发布
 
-- 仓库本身就是插件市场:`.claude-plugin/marketplace.json`(市场名 `clawd-spinner`,唯一的插件 `source: "./"` 指向仓库根目录)。安装:`/plugin marketplace add zhanbodev/clawd-spinner`,再 `/plugin install clawd-spinner@clawd-spinner`。
-- `plugin.json` 里写了 `version`,用户会停在这个版本,**发新版必须改版本号**,用户再 `claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner`。
+- 仓库本身就是插件市场:`.claude-plugin/marketplace.json`(市场名 `clawd-buddy`,唯一的插件 `source: "./"` 指向仓库根目录)。安装:`/plugin marketplace add zhanbodev/clawd-buddy`,再 `/plugin install clawd-buddy@clawd-buddy`。
+- `plugin.json` 里写了 `version`,用户会停在这个版本,**发新版必须改版本号**,用户再 `claude plugin marketplace update clawd-buddy && claude plugin update clawd-buddy@clawd-buddy`。
 - 发版步骤:改 `plugin.json` 的 `version` → `claude plugin validate .claude-plugin/plugin.json` 和 `claude plugin validate .`(后者检查市场清单)→ 提交推送 → `git tag vX.Y.Z` 推送 → `gh release create vX.Y.Z`。
 - 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
-- 本机 `~/.claude/skills/clawd-spinner` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
-- v1.0.0:2026-10-03 首个正式版。
+- 本机 `~/.claude/skills/clawd-buddy` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
+- v1.0.0:2026-10-03 首个正式版,当时叫 clawd-spinner。
+- v1.1.0:改名 **clawd-buddy**(它已经不只是替换 spinner,而是常驻的吉祥物),命令缩短为 `/clawd`;加了音乐模式的音乐条。插件和市场都改了名:`marketplace.json` 里留了 `renames: { "clawd-spinner": "clawd-buddy" }`,但市场本身也改了名,而市场是按名字识别的,1.0.0 的用户要删掉旧插件和旧市场再重装(README 里有命令)。`$.store`(隐藏状态)和 `pluginConfigs`(语言)按插件名存,改名后各重置一次。`native/Info.plist` 的 `dev.clawd-spinner.clawd-ears` 故意没改:改了就会重新编译,macOS 又要重新授权录音。本地目录已改为 `~/mods/clawd-buddy`,软链接改为 `~/.claude/skills/clawd-buddy`;Claude Code 的项目数据按路径存在 `~/.claude/projects/-Users-liangzhanbo-mods-clawd-buddy/`,旧的 `...-clawd-spinner/` 里只剩已归档会话的记录。
 
 ## 迭代历史
 
@@ -159,7 +160,7 @@ claude plugin validate ~/mods/clawd-spinner     # 静态校验:事件名、API �
 
 - [ ] **实机确认 v6**:右对齐的位置和右边距是否贴合输入线;工作时 5 行高是否合适(非打字姿势上方会空两行,可以考虑也利用起来);四分块字符在用户的字体下是否正常;v2 的残影是否消失;`rgb(...)` 颜色是否被接受。如果不被接受,会话里会出现一行 `ui.render (Spinner) refused: ...`,这块区域就不画了。
 - [ ] 确认 `turn.complete` 在每次回答结束时都会触发,庆祝能正常出现。
-- [ ] **让它一直生效**:推荐在 `~/.claude/settings.json` 里加 `"env": { "CLAUDE_CODE_PLUGIN_DIRS": "/Users/liangzhanbo/mods/clawd-spinner" }`,效果等同每次带 `--plugin-dir`,也支持热重载。用户还没同意改全局设置。另一种做法是把 `~/mods` 做成本地插件市场再 `/plugin install`,但每次改代码都要改版本号重装。
+- [ ] **让它一直生效**:推荐在 `~/.claude/settings.json` 里加 `"env": { "CLAUDE_CODE_PLUGIN_DIRS": "/Users/liangzhanbo/mods/clawd-buddy" }`,效果等同每次带 `--plugin-dir`,也支持热重载。用户还没同意改全局设置。另一种做法是把 `~/mods` 做成本地插件市场再 `/plugin install`,但每次改代码都要改版本号重装。
 - [ ] 可选:加 `claude plugin test` 测试;用 `userConfig` 把 `MIN_TURN_MS` 等参数也做成配置项;发布到市场。
 
 ## 参考

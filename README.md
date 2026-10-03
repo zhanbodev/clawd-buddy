@@ -1,4 +1,4 @@
-<h1 align="center">Clawd Spinner</h1>
+<h1 align="center">Clawd Buddy</h1>
 
 <p align="center"><b>English</b> | <a href="README.zh-CN.md">中文</a></p>
 
@@ -72,27 +72,33 @@ You need:
 In Claude Code, add this repository as a marketplace, then install the plugin from it:
 
 ```
-/plugin marketplace add zhanbodev/clawd-spinner
+/plugin marketplace add zhanbodev/clawd-buddy
 ```
 
 ```
-/plugin install clawd-spinner@clawd-spinner
+/plugin install clawd-buddy@clawd-buddy
 ```
 
 Or from your shell:
 
 ```bash
-claude plugin marketplace add zhanbodev/clawd-spinner
+claude plugin marketplace add zhanbodev/clawd-buddy
 ```
 
 ```bash
-claude plugin install clawd-spinner@clawd-spinner
+claude plugin install clawd-buddy@clawd-buddy
 ```
 
 Clawd appears in your next session. To get a newer release later:
 
 ```bash
-claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner
+claude plugin marketplace update clawd-buddy && claude plugin update clawd-buddy@clawd-buddy
+```
+
+**Upgrading from 1.0.0?** It was called `clawd-spinner` then. Remove the old plugin and its marketplace, then install as above:
+
+```bash
+claude plugin uninstall clawd-spinner@clawd-spinner && claude plugin marketplace remove clawd-spinner
 ```
 
 ### From source
@@ -100,11 +106,11 @@ claude plugin marketplace update clawd-spinner && claude plugin update clawd-spi
 To hack on it, clone it and start Claude Code with `--plugin-dir`:
 
 ```bash
-git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
+git clone https://github.com/zhanbodev/clawd-buddy.git ~/mods/clawd-buddy
 ```
 
 ```bash
-claude --plugin-dir ~/mods/clawd-spinner
+claude --plugin-dir ~/mods/clawd-buddy
 ```
 
 To load your copy in every session without the flag, add this to `~/.claude/settings.json`, with your own absolute path:
@@ -112,7 +118,7 @@ To load your copy in every session without the flag, add this to `~/.claude/sett
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/you/mods/clawd-spinner"
+    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/you/mods/clawd-buddy"
   }
 }
 ```
@@ -125,22 +131,22 @@ Type them in Claude Code. They work while Claude is answering, too.
 
 | Command | What it does |
 | :-- | :-- |
-| `/clawd-spinner show` | Brings Clawd back |
-| `/clawd-spinner hidden` | Hides Clawd. It stays hidden in later sessions too |
-| `/clawd-spinner startmusic` | Turns music mode on |
-| `/clawd-spinner stopmusic` | Turns music mode off |
+| `/clawd show` | Brings Clawd back |
+| `/clawd hidden` | Hides Clawd. It stays hidden in later sessions too |
+| `/clawd startmusic` | Turns music mode on |
+| `/clawd stopmusic` | Turns music mode off |
 
 ## Music mode
 
 **Turn it on**
 
-1. Play some music, then run `/clawd-spinner startmusic`. The first time, it takes a few seconds to build the small program that listens.
+1. Play some music, then run `/clawd startmusic`. The first time, it takes a few seconds to build the small program that listens.
 2. macOS asks whether **clawd-ears may record system audio**. Click Allow.
 3. Clawd puts its headphones on and starts dancing to the beat.
 
 **No prompt, or you clicked Don't Allow?**
 
-Open **System Settings → Privacy & Security → Screen & System Audio Recording**, find **clawd-ears** in the "System Audio Recording Only" list below, and switch it on. Then run `/clawd-spinner stopmusic` and `/clawd-spinner startmusic`.
+Open **System Settings → Privacy & Security → Screen & System Audio Recording**, find **clawd-ears** in the "System Audio Recording Only" list below, and switch it on. Then run `/clawd stopmusic` and `/clawd startmusic`.
 
 **What it hears**
 
@@ -171,7 +177,7 @@ claude plugin validate .        # Static check: the events and APIs the mod uses
 ```
 
 ```
-clawd-spinner/
+clawd-buddy/
 ├── .claude-plugin/
 │   ├── plugin.json              Manifest: name, version, the language setting
 │   └── marketplace.json         Makes this repository a marketplace you can install from

@@ -1,19 +1,19 @@
 {
-  "name": "clawd-spinner",
-  "displayName": "Clawd Spinner",
-  "version": "1.0.0",
+  "name": "clawd-buddy",
+  "displayName": "Clawd Buddy",
+  "version": "1.1.0",
   "description": "Clawd, Claude Code's pixel mascot, lives above your prompt: it acts out what Claude is doing, bubbles code while it types, dances to your music, and hops when you click it",
   "author": {
     "name": "zhanbodev",
     "url": "https://github.com/zhanbodev"
   },
-  "homepage": "https://github.com/zhanbodev/clawd-spinner",
-  "repository": "https://github.com/zhanbodev/clawd-spinner",
+  "homepage": "https://github.com/zhanbodev/clawd-buddy",
+  "repository": "https://github.com/zhanbodev/clawd-buddy",
   "keywords": [
     "mod",
     "mascot",
     "clawd",
-    "spinner",
+    "buddy",
     "pixel-art",
     "animation",
     "music"

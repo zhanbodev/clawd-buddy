@@ -1,4 +1,4 @@
-<h1 align="center">Clawd Spinner</h1>
+<h1 align="center">Clawd Buddy</h1>
 
 <p align="center"><a href="README.md">English</a> | <b>中文</b></p>
 
@@ -72,27 +72,33 @@
 在 Claude Code 里先把这个仓库添加为插件市场,再从里面安装:
 
 ```
-/plugin marketplace add zhanbodev/clawd-spinner
+/plugin marketplace add zhanbodev/clawd-buddy
 ```
 
 ```
-/plugin install clawd-spinner@clawd-spinner
+/plugin install clawd-buddy@clawd-buddy
 ```
 
 也可以在终端里执行:
 
 ```bash
-claude plugin marketplace add zhanbodev/clawd-spinner
+claude plugin marketplace add zhanbodev/clawd-buddy
 ```
 
 ```bash
-claude plugin install clawd-spinner@clawd-spinner
+claude plugin install clawd-buddy@clawd-buddy
 ```
 
 下次打开 Claude Code 就能看到 Clawd。以后有新版本时更新:
 
 ```bash
-claude plugin marketplace update clawd-spinner && claude plugin update clawd-spinner@clawd-spinner
+claude plugin marketplace update clawd-buddy && claude plugin update clawd-buddy@clawd-buddy
+```
+
+**用过 1.0.0?** 那时它叫 `clawd-spinner`。先删掉旧插件和旧市场,再按上面的方法安装:
+
+```bash
+claude plugin uninstall clawd-spinner@clawd-spinner && claude plugin marketplace remove clawd-spinner
 ```
 
 ### 从源码运行
@@ -100,11 +106,11 @@ claude plugin marketplace update clawd-spinner && claude plugin update clawd-spi
 想改代码的话,clone 下来,带上 `--plugin-dir` 启动 Claude Code:
 
 ```bash
-git clone https://github.com/zhanbodev/clawd-spinner.git ~/mods/clawd-spinner
+git clone https://github.com/zhanbodev/clawd-buddy.git ~/mods/clawd-buddy
 ```
 
 ```bash
-claude --plugin-dir ~/mods/clawd-spinner
+claude --plugin-dir ~/mods/clawd-buddy
 ```
 
 想让这份源码每次都加载,不用每次带参数:在 `~/.claude/settings.json` 里加上下面这段(路径换成你自己的,要写绝对路径):
@@ -112,7 +118,7 @@ claude --plugin-dir ~/mods/clawd-spinner
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/你的用户名/mods/clawd-spinner"
+    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/你的用户名/mods/clawd-buddy"
   }
 }
 ```
@@ -125,22 +131,22 @@ claude --plugin-dir ~/mods/clawd-spinner
 
 | 命令 | 作用 |
 | :-- | :-- |
-| `/clawd-spinner show` | 让 Clawd 出来 |
-| `/clawd-spinner hidden` | 把 Clawd 藏起来,下次打开 Claude Code 也还是藏着 |
-| `/clawd-spinner startmusic` | 开启音乐模式 |
-| `/clawd-spinner stopmusic` | 关闭音乐模式 |
+| `/clawd show` | 让 Clawd 出来 |
+| `/clawd hidden` | 把 Clawd 藏起来,下次打开 Claude Code 也还是藏着 |
+| `/clawd startmusic` | 开启音乐模式 |
+| `/clawd stopmusic` | 关闭音乐模式 |
 
 ## 音乐模式
 
 **怎么开**
 
-1. 先放一首歌,然后输入 `/clawd-spinner startmusic`。第一次会花几秒钟编译一个听音乐的小程序,之后就直接用了。
+1. 先放一首歌,然后输入 `/clawd startmusic`。第一次会花几秒钟编译一个听音乐的小程序,之后就直接用了。
 2. macOS 会弹窗问 **clawd-ears 是否可以录制系统音频**,点"允许"。
 3. Clawd 戴上耳机,开始跟着节拍跳。
 
 **没弹窗,或者之前点了不允许?**
 
-打开 **系统设置 → 隐私与安全性 → 录屏与系统录音**,在下方"仅系统录音"列表里找到 **clawd-ears**,把开关打开。然后输入 `/clawd-spinner stopmusic`,再输入 `/clawd-spinner startmusic`。
+打开 **系统设置 → 隐私与安全性 → 录屏与系统录音**,在下方"仅系统录音"列表里找到 **clawd-ears**,把开关打开。然后输入 `/clawd stopmusic`,再输入 `/clawd startmusic`。
 
 **它听到了什么**
 
@@ -171,7 +177,7 @@ claude plugin validate .        # 静态检查:用到的事件和 API
 ```
 
 ```
-clawd-spinner/
+clawd-buddy/
 ├── .claude-plugin/
 │   ├── plugin.json              清单:名字、版本、语言设置
 │   └── marketplace.json         让这个仓库成为可以安装的插件市场

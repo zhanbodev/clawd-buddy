@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 
 // What Claude Code passes to the band's ui.render hook, apart from the app
 const BAND = {
-  plugin: 'clawd-spinner',
+  plugin: 'clawd-buddy',
   surface: 'terminal',
   component: 'AbovePrompt',
   viewport: { columns: 100, rows: 30 },
@@ -68,17 +68,17 @@ test('a right click does nothing', async ($, on) => {
   expect(await picture(ui)).toBe(resting)
 })
 
-test('/clawd-spinner hidden empties the band and show brings the mascot back', async ($, on) => {
+test('/clawd hidden empties the band and show brings the mascot back', async ($, on) => {
   await start($, on)
   const ui = await $.ui.mount(BAND)
   expect(await ui.find({ type: 'Client' })).toBeDefined()
 
-  const hidden = await $.command.run({ command: 'clawd-spinner', args: 'hidden' })
+  const hidden = await $.command.run({ command: 'clawd', args: 'hidden' })
   expect(hidden.text).toContain('隐藏')
   await ui.redraw()
   expect(await ui.find({ type: 'Client' })).toBeUndefined()
 
-  await $.command.run({ command: 'clawd-spinner', args: 'show' })
+  await $.command.run({ command: 'clawd', args: 'show' })
   await ui.redraw()
   expect(await ui.find({ type: 'Client' })).toBeDefined()
 })
