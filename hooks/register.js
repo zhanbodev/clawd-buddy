@@ -74,6 +74,15 @@ const SCENE_MESSAGES = 8
 // The models a reply can come from: an alias for $.model.complete, or `main`, a fork of the
 // session's own conversation on its own model
 const CHAT_MODELS = ['haiku', 'sonnet', 'opus', 'main']
+// How hard the chat model thinks: `default` leaves it to the model
+const CHAT_EFFORTS = ['default', 'low', 'medium', 'high', 'xhigh', 'max']
+// Above the prompt, in a terminal too narrow to dock it, the chat pane shares the bottom half
+// of the window with the prompt and the band. Its body is held to what's left after the
+// prompt's rows (its lines, the gap above it and the hint below it), the pane's own border and
+// the band's tallest drawing, so the mascot keeps its room; the chat scrolls inside it.
+const PROMPT_ROWS = 5
+const PANE_BORDER_ROWS = 2
+const BAND_ROWS = SH / 2
 // The speech bubble beside the mascot: its widest, in terminal columns, and how long it stays
 const BUBBLE_WIDTH = 36
 const BUBBLE_MIN_MS = 6000
@@ -88,7 +97,7 @@ const WORDS = {
     poses: { think: '思考中', read: '阅读中', edit: '编辑中', bash: '运行中', search: '搜索中' },
     cheers: ['任务完成!', '搞定啦!', '干得漂亮!', '太棒了!'],
     command: '显示或隐藏 Clawd、开关音乐模式,或和 Clawd 聊天',
-    usage: '用法:/clawd show | hidden | music [start | stop] | chat [想说的话 | close | clear]',
+    usage: '用法:/clawd show | hidden | music [start | stop] | chat [想说的话 | close | clear] | model [模型] | effort [强度]',
     shown: 'Clawd 出来啦。',
     hidden: 'Clawd 已隐藏,输入 /clawd show 让它回来。',
     hiddenMusic: 'Clawd 已隐藏,音乐模式也一起关了。输入 /clawd show 让它回来。',
@@ -114,12 +123,19 @@ const WORDS = {
     chatCleared: '和 Clawd 的聊天记录清空了。',
     chatLanguage: 'Reply in Simplified Chinese, unless the user writes to you in another language.',
     chatHint: '想说的话 | close | clear',
+    modelNow: (model) => '和 Clawd 聊天现在用的模型:' + model + '。可选:' + CHAT_MODELS.join(' / ') + '(main 是分叉主会话)。',
+    modelSet: (model) => '和 Clawd 聊天改用 ' + model + (model === 'main' ? ',分叉主会话,知道完整对话。' : '。'),
+    effortNow: (effort) => '和 Clawd 聊天的思考强度:' + effort + '。可选:' + CHAT_EFFORTS.join(' / ') + '。',
+    effortSet: (effort) => '和 Clawd 聊天的思考强度改为 ' + effort + '。',
+    effortMain: '(main 模式沿用主会话的思考强度,这个设置在换回 haiku/sonnet/opus 时生效。)',
+    badChoice: (what, choices) => '不认识"' + what + '",可选:' + choices.join(' / ') + '。',
+    notSaved: '(只在本次会话生效,没能存进设置:',
   },
   en: {
     poses: { think: 'Thinking', read: 'Reading', edit: 'Editing', bash: 'Running', search: 'Searching' },
     cheers: ['All done!', 'Nailed it!', 'Great job!', 'Awesome!'],
     command: 'Show or hide Clawd, turn music mode on or off, or chat with Clawd',
-    usage: 'Usage: /clawd show | hidden | music [start | stop] | chat [message | close | clear]',
+    usage: 'Usage: /clawd show | hidden | music [start | stop] | chat [message | close | clear] | model [name] | effort [level]',
     shown: 'Clawd is back.',
     hidden: 'Clawd is hidden. Run /clawd show to bring it back.',
     hiddenMusic: 'Clawd is hidden, and music mode is off too. Run /clawd show to bring it back.',
@@ -145,6 +161,13 @@ const WORDS = {
     chatCleared: 'The chat with Clawd is cleared.',
     chatLanguage: 'Reply in English, unless the user writes to you in another language.',
     chatHint: 'message | close | clear',
+    modelNow: (model) => 'Clawd chats with ' + model + ' now. Choose from ' + CHAT_MODELS.join(' / ') + ' (main forks the session).',
+    modelSet: (model) => 'Clawd now chats with ' + model + (model === 'main' ? ', a fork of the session that knows the whole conversation.' : '.'),
+    effortNow: (effort) => "Clawd's chat effort is " + effort + '. Choose from ' + CHAT_EFFORTS.join(' / ') + '.',
+    effortSet: (effort) => "Clawd's chat effort is now " + effort + '.',
+    effortMain: " (main uses the session's own effort; this applies once you switch back to haiku, sonnet or opus.)",
+    badChoice: (what, choices) => 'No such option "' + what + '". Choose from ' + choices.join(' / ') + '.',
+    notSaved: " (for this session only; it couldn't be saved to the settings: ",
   },
 }
 
@@ -617,6 +640,8 @@ let hidden = false
 // plays only the hop, up to frame pokeLast.
 let poke = -1
 let pokeLast = POKE.length - 1
+// The window's height in rows, as the band last saw it
+let viewRows = 0
 // While music mode is on, the program listening to the music, as { ears }; else null
 let music = null
 // What the music is doing, for danceFrame: how loud, how many beats so far, the step the last
@@ -730,7 +755,7 @@ let WORDS_NOW = WORDS.zh
 // 'user', 'clawd' or 'note'; whether a reply is on its way, and whether more was said
 // meanwhile; the speech bubble beside the mascot, { text, until }; and the model replies
 // come from
-const chat = { history: [], pending: false, again: false, bubble: null, model: 'haiku' }
+const chat = { history: [], pending: false, again: false, bubble: null, model: 'haiku', effort: 'default' }
 
 // Who Clawd is, for the model that speaks for it
 function persona() {
@@ -796,10 +821,24 @@ async function clawdReply($) {
       prompt: 'The chat so far:\n' + said + "\n\nReply as Clawd to the user's last message.",
       maxTokens: 800,
       timeoutMs: 60000,
+      ...(chat.effort !== 'default' ? { effort: chat.effort } : {}),
     })
     return r.isAnswered ? { role: 'clawd', text: r.text.trim() } : { role: 'note', text: why(r) }
   } catch (err) {
     return { role: 'note', text: WORDS_NOW.chatFailed + String((err && err.message) || err) }
+  }
+}
+
+// Save one of this plugin's /config options, as if the user changed it in the menu, so it
+// lasts and /config shows it. Resolves '' once saved, else why not.
+async function saveOption($, field, value) {
+  try {
+    const row = (await $.config.list()).find((r) => r.key.endsWith('.' + field) && r.key.startsWith($.plugin.name))
+    if (!row) return 'no /config row'
+    const { deny } = await $.config.set({ key: row.key, value })
+    return deny || ''
+  } catch (err) {
+    return String((err && err.message) || err)
   }
 }
 
@@ -838,6 +877,8 @@ async function say($, text) {
 // drawn the change, scroll it to the bottom
 function chatChanged($) {
   if (chat.history.length > CHAT_KEEP) chat.history.splice(0, chat.history.length - CHAT_KEEP)
+  // Kept for the session in $.state too, so a reload (a /config change, say) loses none of it
+  $.state.set({ plugin: 'clawd-buddy', key: 'chat' }, { history: chat.history }).catch(() => {})
   $.ui.invalidate('ui.render')
   $.clock
     .sleep(100)
@@ -850,27 +891,51 @@ function cellsOf(ch) {
   return /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]|[\u{1f300}-\u{1faff}]/u.test(ch) ? 2 : 1
 }
 
-// A reply fitted into the speech bubble: Markdown marks dropped, wrapped to width columns,
-// at most lines lines, the last ending in … when it doesn't all fit
+// A reply fitted into the speech bubble: Markdown marks dropped, wrapped to width columns at
+// spaces (East Asian text at any character), at most lines lines, the last ending in … when
+// it doesn't all fit
 function bubbleLines(text, width, lines) {
   const flat = text.replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim()
+  const cells = (s) => [...s].reduce((n, ch) => n + cellsOf(ch), 0)
   const out = ['']
-  let used = 0
-  for (const ch of flat) {
-    const w = cellsOf(ch)
-    if (used + w > width) {
-      if (out.length === lines) {
-        out[lines - 1] = out[lines - 1].replace(/.$/u, '…')
-        return out
-      }
-      out.push('')
-      used = 0
-      if (ch === ' ') continue
+  // Words of Latin letters stay whole; every other character is a piece of its own
+  for (const piece of flat.match(/[\p{Script=Latin}\p{N}'’.,!?:;()\-]+|./gu) || []) {
+    const used = cells(out[out.length - 1])
+    if (used + cells(piece) <= width) {
+      out[out.length - 1] += piece
+      continue
     }
-    out[out.length - 1] += ch
-    used += w
+    if (out.length === lines) {
+      out[lines - 1] = out[lines - 1].trimEnd().replace(/.$/u, '…')
+      return out.map((line) => line.trimEnd())
+    }
+    if (piece === ' ') {
+      out.push('')
+      continue
+    }
+    // A word wider than a whole line is cut where the line ends
+    if (cells(piece) > width) {
+      let rest = piece
+      while (rest) {
+        let line = out[out.length - 1]
+        while (rest && cells(line) + cellsOf(rest[0]) <= width) {
+          line += rest[0]
+          rest = rest.slice(1)
+        }
+        out[out.length - 1] = line
+        if (rest) {
+          if (out.length === lines) {
+            out[lines - 1] = out[lines - 1].trimEnd().replace(/.$/u, '…')
+            return out.map((line) => line.trimEnd())
+          }
+          out.push('')
+        }
+      }
+      continue
+    }
+    out.push(piece)
   }
-  return out
+  return out.map((line) => line.trimEnd())
 }
 
 // What /clawd takes next, once a subcommand that takes more is typed: drawn dim at the end of
@@ -880,6 +945,8 @@ let subHint = ''
 function subHintFor(draft) {
   if (/^\/clawd\s+music\s/.test(draft)) return '/clawd music: start | stop'
   if (/^\/clawd\s+chat\s/.test(draft)) return '/clawd chat: ' + WORDS_NOW.chatHint
+  if (/^\/clawd\s+model\s/.test(draft)) return '/clawd model: ' + CHAT_MODELS.join(' | ')
+  if (/^\/clawd\s+effort\s/.test(draft)) return '/clawd effort: ' + CHAT_EFFORTS.join(' | ')
   return ''
 }
 
@@ -898,11 +965,15 @@ export function register(on, options) {
     }
     WORDS_NOW = words
     chat.model = CHAT_MODELS.includes(options && options.chatModel) ? options.chatModel : 'haiku'
+    chat.effort = CHAT_EFFORTS.includes(options && options.chatEffort) ? options.chatEffort : 'default'
     hidden = (await $.store.get('hidden')) === true
+    // The chat so far this session, should the module have just reloaded
+    const kept = await $.state.get({ plugin: 'clawd-buddy', key: 'chat' }).catch(() => undefined)
+    if (kept && kept.value && Array.isArray(kept.value.history)) chat.history = kept.value.history
     await $.command.register({
       name: 'clawd',
       description: words.command,
-      argumentHint: 'show | hidden | music | chat',
+      argumentHint: 'show | hidden | music | chat | model | effort',
       immediate: true,
     })
     $.clock.every(FRAME_MS, async () => {
@@ -1038,13 +1109,36 @@ export function register(on, options) {
       }
       if (message.toLowerCase() === 'clear') {
         Object.assign(chat, { history: [], bubble: null })
-        $.ui.invalidate('ui.render')
+        chatChanged($)
         return { text: words.chatCleared }
       }
       // With nothing to say yet, the pane takes the keyboard so the user can type in it
-      await $.ui.open({ id: CHAT_PANE, title: 'Clawd', ...(message ? {} : { focus: true }) })
+      const paneRows = viewRows ? Math.max(4, Math.floor(viewRows / 2) - PROMPT_ROWS - PANE_BORDER_ROWS - BAND_ROWS) : 0
+      await $.ui.open({
+        id: CHAT_PANE,
+        title: 'Clawd',
+        ...(message ? {} : { focus: true }),
+        ...(paneRows ? { rows: paneRows } : {}),
+      })
       if (message) void say($, message)
       return {}
+    }
+    if (arg === 'model' || arg.startsWith('model ') || arg === 'effort' || arg.startsWith('effort ')) {
+      // /clawd model [name] and /clawd effort [level]: show the chat's setting, or change it for
+      // now and in /config
+      const isModel = arg.startsWith('model')
+      const choice = arg.slice(isModel ? 5 : 6).trim()
+      const choices = isModel ? CHAT_MODELS : CHAT_EFFORTS
+      const now = isModel ? chat.model : chat.effort
+      if (!choice) return { text: isModel ? words.modelNow(now) : words.effortNow(now) }
+      if (!choices.includes(choice)) return { text: words.badChoice(choice, choices) }
+      if (isModel) chat.model = choice
+      else chat.effort = choice
+      const problem = await saveOption($, isModel ? 'chatModel' : 'chatEffort', choice)
+      let reply = isModel ? words.modelSet(choice) : words.effortSet(choice)
+      if (!isModel && chat.model === 'main') reply += words.effortMain
+      if (problem) reply += words.notSaved + problem + ')'
+      return { text: reply }
     }
     if (arg === 'show') {
       hidden = false
@@ -1074,7 +1168,26 @@ export function register(on, options) {
     return { text }
   })
 
-  // The chat with Clawd, in its own pane: every message so far, then a box to say more
+  // What the mascot looks like right now, and the caption beside it
+  function scene() {
+    if (isWorking) {
+      const caption = words.poses[pose] + '.'.repeat(1 + ((step >> 2) % 3)) + (target ? ' · ' + target : '')
+      return { grid: workFrame(pose, step, music !== null), caption }
+    }
+    if (celebration) {
+      const grid = celebration.kind === 'party' ? partyFrame(celebrationStep) : fireworksFrame(celebrationStep)
+      return { grid, caption: celebration.cheer }
+    }
+    if (poke >= 0) return { grid: pokeFrame(poke, music !== null, dance), caption: '' }
+    // Thinking up a reply to the chat, headphones still on in music mode: it dances only when
+    // it has nothing else to do
+    if (chat.pending) return { grid: workFrame('think', step, music !== null), caption: '' }
+    if (music) return { grid: danceFrame(step, dance), caption: '' }
+    return { grid: idleFrame(idle), caption: '' }
+  }
+
+  // The chat with Clawd, in its own pane: every message so far, then a box to say more. The
+  // pane keeps all its rows for the chat; the mascot stays in the band.
   on('ui.render', { component: 'Pane' }, async ($, e, next) => {
     if (e.requestId !== CHAT_PANE) return next(e)
     const { Box, Text, Input } = $.ui.resolve(e)
@@ -1118,28 +1231,13 @@ export function register(on, options) {
   // Claude Code's own spinner line stays as it is, for the elapsed time and interrupt hint.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // The block characters are drawn for the terminal, and a survey gets the band to itself
+    if (e.viewport && typeof e.viewport.rows === 'number') viewRows = e.viewport.rows
     if (hidden || e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
-    let grid
-    let caption = ''
-    if (isWorking) {
-      grid = workFrame(pose, step, music !== null)
-      caption = words.poses[pose] + '.'.repeat(1 + ((step >> 2) % 3)) + (target ? ' · ' + target : '')
-    } else if (celebration) {
-      grid = celebration.kind === 'party' ? partyFrame(celebrationStep) : fireworksFrame(celebrationStep)
-      caption = celebration.cheer
-    } else if (poke >= 0) {
-      grid = pokeFrame(poke, music !== null, dance)
-    } else if (chat.pending) {
-      // Thinking up a reply to the chat, headphones still on in music mode: it dances only
-      // when it has nothing else to do
-      grid = workFrame('think', step, music !== null)
-    } else if (music) {
-      grid = danceFrame(step, dance)
-    } else {
-      grid = idleFrame(idle)
-    }
+    const { grid, caption } = scene()
     const rows = grid.length / 2
-    // Leave the band alone in a window too short to hold the drawing
+    // With too few rows left for the drawing, as when the chat pane sits above the prompt in a
+    // small terminal and takes the room, the mascot stays out of the way until there's room:
+    // the chat and the code need the rows more
     if (typeof e.props.maxRows === 'number' && e.props.maxRows < rows) return next(e)
     const { Box, Text, Client } = $.ui.resolve(e)
     const children = []

@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="#最新改进">最新改进</a> ·
   <a href="#安装">安装</a> ·
   <a href="#命令">命令</a> ·
   <a href="#和-clawd-聊天">和 Clawd 聊天</a> ·
@@ -21,6 +22,21 @@
 </p>
 
 ---
+
+## 最新改进
+
+**1.3.0**
+
+- **在输入框里切换聊天模型和思考强度**:`/clawd model sonnet`、`/clawd effort high`。两者都会存进 `/config`,切换后之前的聊天记录还在。
+- **小屏适配**:聊天面板放在输入框上方时会限制高度,给 Clawd 留出位置;屏幕实在放不下两者时,Clawd 主动让位,把空间留给聊天和代码。
+- **对话气泡更整齐**:英文按空格换行,不再把单词拆开。
+
+更早的版本:
+
+- **1.2.0**:可以和 Clawd 聊天(`/clawd chat`、聊天面板、对话气泡),音乐命令改为 `/clawd music start|stop`,聊天或听歌时 Clawd 照样先忙手上的活。
+- **1.1.0**:由 Clawd Spinner 改名而来,命令改为 `/clawd`,音乐模式加了两侧的音乐条。
+
+所有版本见 [Releases 页面](https://github.com/zhanbodev/clawd-buddy/releases)。
 
 ## 它会做什么
 
@@ -139,6 +155,8 @@ claude --plugin-dir ~/mods/clawd-buddy
 | `/clawd chat` | 打开和 Clawd 的聊天,直接打字 |
 | `/clawd chat 想说的话` | 对 Clawd 说一句话 |
 | `/clawd chat close` / `clear` | 关闭聊天 / 清空聊天记录 |
+| `/clawd model [模型]` | 查看或切换聊天模型:`haiku`、`sonnet`、`opus`、`main` |
+| `/clawd effort [强度]` | 查看或设置思考强度:`default`、`low`、`medium`、`high`、`xhigh`、`max` |
 
 ## 和 Clawd 聊天
 
@@ -148,7 +166,7 @@ Clawd 不只是看着,你还可以直接跟它说话。
 - Clawd 回复时会跳一下,身边冒出一个**对话气泡**显示它说的话,几秒后消失;完整内容在面板里。
 - Clawd 知道现在在发生什么:Claude 正在做什么,以及你们最近聊了些什么。它不能跑工具、不能改文件,真要干活时它会让你去找 Claude。
 - 聊天**不进入 Claude 的对话**:你和 Clawd 说的话 Claude 看不到;会话结束,聊天记录也就忘了。
-- 谁来回答可以在 `/config` 的 **Chat model / 聊天模型** 里选,见下面的设置。
+- 用 `/clawd model sonnet` 切换谁来回答(也可以在 `/config` 的 **Chat model / 聊天模型** 里选,见下面的设置),用 `/clawd effort high` 调整思考强度。两者都会存进设置,切换后之前的聊天记录还在。
 - 面板的底色由 Claude Code 的主题决定,而主对话区透出的是终端自己的底色。想让面板和终端完全一样,用 `/theme` 选 ANSI 主题:深色终端选 **Dark mode (ANSI colors only)**(`"theme": "dark-ansi"`),浅色终端选对应的浅色 ANSI 主题。深色终端配 `light` 主题时面板会是白色;选 `dark` 是接近多数深色终端的深灰。
 
 ## 音乐模式
@@ -187,6 +205,8 @@ Clawd 不只是看着,你还可以直接跟它说话。
 | `sonnet`、`opus` | 同样的摘要,换更大的模型回答 |
 | `main` | 分叉主会话,用主会话的模型:Clawd 知道到目前为止的完整对话。更贵,也更慢。主会话还没有回答过时,先由 haiku 代答 |
 
+还有 **Chat effort / 聊天思考强度**,用 `/clawd effort` 设置:`default`(交给模型决定),或 `low` 到 `max`。不支持的模型会忽略它,`main` 沿用主会话的设置。
+
 ## 它是怎么画出来的
 
 - Clawd 用"四分块"字符(`▘ ▝ ▀ ▖ ▌ ▞ ▛ ▗ ▚ ▐ ▜ ▄ ▙ ▟ █`)画:一个字符格装 2×2 个像素,和 Claude Code 自己画 logo 的方式一样,造型也是照着官方 logo 逐像素复刻的。
@@ -211,6 +231,7 @@ clawd-buddy/
 ├── native/
 │   ├── clawd-ears.swift         音乐模式的听音小程序
 │   └── Info.plist               它申请"系统录音"权限时的说明
+├── types/index.d.ts             声明存在 $.state 里的本次会话聊天记录
 ├── docs/images/                 README 里的动图
 ├── tests/                       claude plugin test 用的测试
 └── HANDOFF.md                   设计细节、踩过的坑和待办

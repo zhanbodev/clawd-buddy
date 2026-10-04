@@ -1,7 +1,7 @@
 {
   "name": "clawd-buddy",
   "displayName": "Clawd Buddy",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Clawd, Claude Code's pixel mascot, lives above your prompt: it acts out what Claude is doing, bubbles code while it types, dances to your music, and hops when you click it",
   "author": {
     "name": "zhanbodev",
@@ -18,6 +18,7 @@
     "animation",
     "music"
   ],
+  "types": "./types/index.d.ts",
   "userConfig": {
     "language": {
       "type": "string",
@@ -41,6 +42,20 @@
         "main"
       ],
       "default": "haiku"
+    },
+    "chatEffort": {
+      "type": "string",
+      "title": "Chat effort / 聊天思考强度",
+      "description": "How hard the chat model thinks before Clawd answers (/clawd effort). default leaves it to the model; models without an effort setting ignore it, and main uses the session's own. 和 Clawd 聊天时模型的思考强度:default 交给模型自己决定;不支持的模型会忽略,main 沿用主会话的设置。",
+      "options": [
+        "default",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "default": "default"
     }
   }
 }

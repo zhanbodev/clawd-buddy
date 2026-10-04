@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="#whats-new">What's new</a> ·
   <a href="#install">Install</a> ·
   <a href="#commands">Commands</a> ·
   <a href="#talk-to-clawd">Talk to Clawd</a> ·
@@ -21,6 +22,21 @@
 </p>
 
 ---
+
+## What's new
+
+**1.3.0**
+
+- **Switch the chat model and effort from the prompt**: `/clawd model sonnet` and `/clawd effort high`. Both are saved to `/config`, and switching keeps the chat so far.
+- **Small terminals**: the chat pane above the prompt is held to a height that leaves Clawd its spot. In a terminal too small for both, Clawd steps aside so the chat and your code keep the room.
+- **Tidier speech bubbles**: English wraps at spaces instead of mid-word.
+
+Earlier releases:
+
+- **1.2.0**: chat with Clawd (`/clawd chat`, a chat pane and speech bubbles), `/clawd music start|stop`, and Clawd keeps working while it chats or listens.
+- **1.1.0**: renamed from Clawd Spinner, the `/clawd` command, and equalizer bars in music mode.
+
+Every release is on the [releases page](https://github.com/zhanbodev/clawd-buddy/releases).
 
 ## What it does
 
@@ -139,6 +155,8 @@ Type them in Claude Code. They work while Claude is answering, too.
 | `/clawd chat` | Opens the chat with Clawd, ready to type |
 | `/clawd chat <message>` | Says something to Clawd |
 | `/clawd chat close` / `clear` | Closes the chat / clears it |
+| `/clawd model [name]` | Shows or switches the chat model: `haiku`, `sonnet`, `opus` or `main` |
+| `/clawd effort [level]` | Shows or sets how hard it thinks: `default`, `low`, `medium`, `high`, `xhigh` or `max` |
 
 ## Talk to Clawd
 
@@ -148,7 +166,7 @@ Clawd doesn't only watch: you can chat with it.
 - When Clawd answers, it hops, and a **speech bubble** with its reply pops up beside it for a few seconds. The full reply is in the pane.
 - Clawd knows what's going on: what Claude is doing right now and the latest of your conversation. It can't run tools or change files, so for real work it sends you back to Claude.
 - The chat **stays out of Claude's conversation**: nothing you say to Clawd reaches Claude, and the chat is forgotten when the session ends.
-- Choose who answers under **Chat model / 聊天模型** in `/config`, below.
+- Choose who answers with `/clawd model sonnet` (or under **Chat model / 聊天模型** in `/config`, below), and how hard it thinks with `/clawd effort high`. Both are saved to your settings, and switching keeps the chat so far.
 - The pane takes its background from Claude Code's theme, while the main transcript shows your terminal's own background. To have the pane match your terminal exactly, pick an ANSI theme with `/theme`: **Dark mode (ANSI colors only)** for a dark terminal (`"theme": "dark-ansi"`), or its light counterpart for a light one. With `light` in a dark terminal the pane comes out white; `dark` gives a dark gray close to most dark terminals.
 
 ## Music mode
@@ -187,6 +205,8 @@ And **Chat model / 聊天模型**, for who answers when you chat with Clawd:
 | `sonnet`, `opus` | The same digest, answered by a bigger model |
 | `main` | Forks the session's own conversation, on the session's own model: Clawd knows everything said so far. Costs more, and takes longer. Before the session's first answer, haiku stands in |
 
+And **Chat effort / 聊天思考强度**, set with `/clawd effort`: `default` (leave it to the model), or `low` to `max`. Models without an effort setting ignore it, and `main` uses the session's own.
+
 ## How it's drawn
 
 - Clawd is drawn with quadrant block characters (`▘ ▝ ▀ ▖ ▌ ▞ ▛ ▗ ▚ ▐ ▜ ▄ ▙ ▟ █`), four pixels to a character cell, the way Claude Code draws its own logo. Its shape is copied pixel for pixel from that logo.
@@ -211,6 +231,7 @@ clawd-buddy/
 ├── native/
 │   ├── clawd-ears.swift         The program music mode listens with
 │   └── Info.plist               The reason it gives when it asks to record system audio
+├── types/index.d.ts             Declares the chat history kept for the session in $.state
 ├── docs/images/                 The animations in this README
 ├── tests/                       Tests for claude plugin test
 └── HANDOFF.md                   Design notes, pitfalls and open items (in Chinese)

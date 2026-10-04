@@ -131,10 +131,15 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
   - `main` 用 `$.model.fork`:在主会话自己的对话后追加人设和聊天记录,用主会话的模型,前缀走缓存,不带工具,也不会写进主对话。主会话还没回答过时返回 `nothing-to-fork`,自动改用 haiku 并在面板里注明。
   - 人设里要求只说话、不写星号动作(Haiku 一开始会写 `*bounces excitedly*`)。
 - **音乐模式下有事先忙**:开着音乐时,Claude 在工作就戴着耳机做工作姿势,Clawd 在想怎么回话就戴着耳机做思考姿势,只有两样都没有时才跳舞(渲染分支的顺序:工作 → 庆祝 → 被点 → 想回话 → 跳舞 → 空闲)。
+- **小屏时 Clawd 让位**:窄终端(竖屏)里聊天面板放在输入框上方,和输入框上方区域共用底部那一块(最多半个终端高)。聊天记录一多,区域的 `maxRows` 只剩 2 行(70×40 的 tmux 里实测),放不下 Clawd。试过两种办法都被否了:把 Clawd 搬进聊天面板(占掉聊天文字的高度),以及画一个 2 行高的迷你 Clawd(不完整)。最后定为:放不下就不画,把空间留给聊天和代码,有空间了再出来。
+- **限制聊天面板高度,给 Clawd 留位置**:用户的终端字号大,实际只有约 85×42,面板放在输入框上方,聊几句后 Clawd 就被挤没了。底部那一块最多半个终端高,由面板、输入框上方区域和输入框分。现在 `/clawd chat` 打开面板时传 `rows`:`floor(终端行数 / 2) − 5(输入框那几行:上下分隔线、输入行、下方提示、上方空行)− 2(面板上下边框,`rows` 不算边框)− 5(Clawd 最高的画面)`,最少 4 行;终端行数取自输入框上方区域渲染时的 `e.viewport.rows`。实测 85×42:算出 9 行,聊三轮后区域仍有 5 行,Clawd 和气泡都在,面板内部滚动。注意:面板打开时才算一次,已经开着的面板要关掉重开才生效;终端改变大小后也一样。
+- **气泡折行**:英文按空格折行,中文逐字,超长单词在行尾截断,行尾空格去掉。
 - **说完继续干活**:Claude 工作时,等回复期间照常显示工作姿势和状态文字(不出点点气泡),回复气泡只停 `BUBBLE_WORKING_MS = 5000` 毫秒,`turn.start` 时立刻清掉气泡;只有空闲时才换思考姿势、跳一下、气泡按字数停留。
 - **面板配色**:面板底色由 Claude Code 的主题决定(实测 light 主题是 256 色的 255 号近白,dark 是 235 号深灰),mod 改不了,也拿不到终端底色。用户的 `theme` 是 light 而终端是深色,所以面板发白。消息文字原来用 `Markdown`,它用终端默认前景色,在浅色底上几乎看不见;改成 `Text` 加主题色键(正文 `text`、Clawd 名字 `claude`、提示 `inactive`),在哪种主题下都看得清。根治办法是换主题:实测 `dark-ansi` 下面板输出 `49`(终端默认底色),和主对话区完全一致;`dark` 是 235 号深灰。mod 侧试过 Box `backgroundColor` 设 `default`/`transparent`/`reset`,都被忽略;设具体颜色只能涂到有内容的行,边距和标题栏仍是主题色。
 - **命令提示**:`argumentHint` 只写一级子命令 `show | hidden | music | chat`。Claude Code 的灰色提示只在命令名后面还没打字时显示,所以二级参数没法放在那里:`prompt.edit` 钩子算出编辑后的草稿,打了 `/clawd music ` 或 `/clawd chat ` 时,通过 `PromptHint` 的 `tail` 在输入框下面那行末尾显示 `start | stop` / `想说的话 | close | clear`,清空就消失。试过每次按键重新注册命令来换提示,没用(有参数后提示本来就不显示),已放弃。
 - **音乐命令**:`/clawd music start|stop`(也认 `on`/`off`);旧的 `startmusic`/`stopmusic` 继续当别名用,文档里不再写。
+- **`/clawd model` / `/clawd effort`**:不带参数显示当前值和可选值,带参数就改。改动同时写回 `/config`:`$.config.list()` 找到本插件的 `chatModel` / `chatEffort` 行(键名是 `<插件 id>.<字段>`,`--plugin-dir` 时是 `clawd-buddy@inline`),再 `$.config.set`;写不进去就只在本次会话生效并说明原因。effort 只传给 `$.model.complete`(值为 default 时不传),`main` 用 fork,没有 effort 参数。
+- **聊天记录存进 `$.state`**:改 `/config` 会让插件重新加载,模块变量就清空了。聊天记录每次变化都 `$.state.set({ plugin: 'clawd-buddy', key: 'chat' })`,`session.start` 时读回来;`$.state` 撑过重新加载,会话结束或 `/clear` 才清空。需要 `types/index.d.ts` 声明 `PluginState['clawd-buddy'].chat`,并在 plugin.json 里写 `"types"`;声明要照官方示例的写法(加了 `export {}` 时校验认不出来)。实测:说了喜欢的颜色,`/clawd model sonnet` 触发重新加载后再问,Sonnet 照样答得出。
 - **排队**:同时只有一个请求;等待时又说了话,就设 `again`,等这条回完再一起回答。
 - **记忆**:模块变量 `chat`,最多 50 条,只在本次会话;改代码热重载会清空(只有开发时才会碰到)。
 - **实测**(tmux,真实调用):面板输入框拿到焦点、Haiku 约 1 秒回复、气泡和跳一下正常;`main` 模式能答出主对话里让 Claude 记住的暗号;第一轮之前正确改用 haiku;`clear`、`close` 正常;主对话里没有聊天内容。
@@ -160,6 +165,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
 - 本机 `~/.claude/skills/clawd-buddy` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
 - v1.0.0:2026-10-03 首个正式版,当时叫 clawd-spinner。
+- v1.3.0:`/clawd model` / `/clawd effort`(写回 `/config`,新增 `chatEffort`),聊天记录存进 `$.state`(切换模型后不丢),小屏时限制聊天面板高度给 Clawd 留位置、放不下就让位,气泡英文按空格折行。
 - v1.2.0:可以和 Clawd 聊天(`/clawd chat`、聊天面板、对话气泡、`chatModel` 配置)。
 - v1.1.0:改名 **clawd-buddy**(它已经不只是替换 spinner,而是常驻的吉祥物),命令缩短为 `/clawd`;加了音乐模式的音乐条。插件和市场都改了名:`marketplace.json` 里留了 `renames: { "clawd-spinner": "clawd-buddy" }`,但市场本身也改了名,而市场是按名字识别的,1.0.0 的用户要删掉旧插件和旧市场再重装(README 里有命令)。`$.store`(隐藏状态)和 `pluginConfigs`(语言)按插件名存,改名后各重置一次。`native/Info.plist` 的 `dev.clawd-spinner.clawd-ears` 故意没改:改了就会重新编译,macOS 又要重新授权录音。本地目录已改为 `~/mods/clawd-buddy`,软链接改为 `~/.claude/skills/clawd-buddy`;Claude Code 的项目数据按路径存在 `~/.claude/projects/-Users-liangzhanbo-mods-clawd-buddy/`,旧的 `...-clawd-spinner/` 里只剩已归档会话的记录。
 
