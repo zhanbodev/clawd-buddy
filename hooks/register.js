@@ -70,7 +70,11 @@ const EQ_COLOR = 0xc4704a
 const CHAT_PANE = 'clawd-chat'
 const CHAT_KEEP = 50
 const CHAT_READS = 20
-const SCENE_MESSAGES = 8
+// A model other than the session's own can't fork the session, so it's handed a copy of the
+// conversation instead: as much of it, newest first, as fits in this many characters (about
+// ten thousand tokens), each message cut to at most MESSAGE_CHARS
+const SCENE_CHARS = 40000
+const MESSAGE_CHARS = 4000
 // The models a reply can come from: an alias for $.model.complete, or `main`, a fork of the
 // session's own conversation on its own model
 const CHAT_MODELS = ['haiku', 'sonnet', 'opus', 'main']
@@ -769,31 +773,48 @@ function persona() {
 }
 
 // What's going on, for a model that can't see the session itself: whether Claude is working,
-// and the latest few messages of the user's conversation with Claude, each cut short, its tool
-// calls reduced to the tool and the file's name
+// and the user's conversation with Claude so far, newest kept when it's too long to send
+// whole. Each message is its words, cut short when long, and its tool calls reduced to the
+// tool and the file's name; what the tools returned is left out.
 async function sceneDigest($) {
   let messages = []
   try {
     messages = await $.session.messages()
   } catch {}
   const lines = []
-  for (const m of messages.slice(-SCENE_MESSAGES)) {
+  let size = 0
+  let isCut = false
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const m = messages[i]
     const tools = (m.toolUses || []).map((use) => {
       const file = use.input && (use.input.file_path || use.input.notebook_path || use.input.path)
       return file ? use.tool + ' ' + String(file).split('/').pop() : use.tool
     })
-    const text = String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 400)
+    let text = String(m.text || '').trim()
+    if (text.length > MESSAGE_CHARS) text = text.slice(0, MESSAGE_CHARS) + ' …'
     if (!text && tools.length === 0) continue
-    lines.push((m.role === 'user' ? 'User: ' : 'Claude: ') + text + (tools.length ? ' [tools: ' + tools.join(', ') + ']' : ''))
+    const line = (m.role === 'user' ? 'User: ' : 'Claude: ') + text + (tools.length ? ' [tools: ' + tools.join(', ') + ']' : '')
+    if (size + line.length > SCENE_CHARS) {
+      isCut = true
+      break
+    }
+    lines.unshift(line)
+    size += line.length + 2
   }
   const now = isWorking
     ? 'Claude is working right now (' + pose + (target ? ', on ' + target : '') + ').'
     : 'Claude is waiting for the user.'
-  return (now + "\nThe latest of the user's conversation with Claude:\n" + (lines.join('\n') || '(nothing yet)')).slice(-6000)
+  return (
+    now +
+    "\n\nThe user's conversation with Claude so far" +
+    (isCut ? ' (its earliest part left out for length)' : '') +
+    ':\n\n' +
+    (lines.join('\n\n') || '(nothing yet)')
+  )
 }
 
 // One reply from Clawd to the chat so far, as a chat message: from a fork of the session's
-// own conversation in `main` mode, else from the configured model told what's going on. A
+// own conversation in `main` mode, else from the configured model handed the conversation. A
 // failure comes back as a note saying why.
 async function clawdReply($) {
   const said = chat.history

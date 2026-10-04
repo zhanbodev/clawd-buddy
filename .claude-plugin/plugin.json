@@ -1,7 +1,7 @@
 {
   "name": "clawd-buddy",
   "displayName": "Clawd Buddy",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Clawd, Claude Code's pixel mascot, lives above your prompt: it acts out what Claude is doing, bubbles code while it types, dances to your music, and hops when you click it",
   "author": {
     "name": "zhanbodev",
@@ -34,7 +34,7 @@
     "chatModel": {
       "type": "string",
       "title": "Chat model / 聊天模型",
-      "description": "Which model answers when you chat with Clawd (/clawd chat). haiku, sonnet or opus are told what Claude is doing and the latest of your conversation; main forks the session's own conversation on its own model, so it knows everything said so far. 和 Clawd 聊天时用哪个模型:haiku/sonnet/opus 会拿到当前情况和最近几句对话的摘要;main 分叉主会话,用主会话的模型,知道完整对话。",
+      "description": "Which model answers when you chat with Clawd (/clawd chat, or switch with /clawd model). haiku, sonnet or opus get a copy of your conversation with Claude so far (the newest 40,000 characters or so); main forks the session's own conversation on its own model, with nothing cut. 和 Clawd 聊天时用哪个模型(也可以用 /clawd model 切换):haiku/sonnet/opus 会拿到你和 Claude 到目前为止的对话副本(最新的约 4 万字);main 分叉主会话,用主会话的模型,完整不截。",
       "options": [
         "haiku",
         "sonnet",

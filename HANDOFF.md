@@ -127,7 +127,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - **聊天面板**:`$.ui.open({ id: 'clawd-chat', title: 'Clawd', focus })`,Pane 渲染钩子画出完整记录(用户的消息标"你",Clawd 的标橙色,正文用 `Markdown`)和一个 `Input`。只带 `/clawd chat` 时请求 `focus: true`,刚提交完命令输入框是空的,所以能拿到焦点;带话时不抢焦点。宽终端停靠在右侧,窄终端在输入框上方。每次变化后 `$.ui.scroll({ to: { key: 'clawd-chat-input' }, in: 'clawd-chat', block: 'end' })` 滚到底(先 `$.clock.sleep(100)` 等重绘)。
 - **对话气泡**:输入框上方区域里,在 Clawd 左边画圆角 `Box`,替换状态文字;行数 = 画布行数 − 2,区域不会变高。`bubbleLines` 自己折行(中文和 emoji 算两格),放不下的末尾用"…"。显示 `max(6s, 字数 × 0.12s)`,最长 20 秒。等待时气泡里是跳动的点,Clawd 换成思考姿势;回复到达时只播 `POKE` 的前 5 帧(跳一下,`pokeLast`)。
 - **谁来回答**:配置项 `chatModel`(`haiku` 默认 / `sonnet` / `opus` / `main`)。
-  - 前三个用 `$.model.complete`:`system` = 人设 + `sceneDigest`(Claude 是否在工作、当前姿势和文件,加上 `$.session.messages()` 最近 8 条,每条截到 400 字,工具只写工具名和文件名,总长不超过 6000 字);`prompt` = 最近 20 条聊天。
+  - 前三个用 `$.model.complete`:`system` = 人设 + `sceneDigest`(Claude 是否在工作、当前姿势和文件,加上 `$.session.messages()` 里**整个会话**的对话副本:从最新往前取,到 `SCENE_CHARS = 40000` 字为止,每条消息最多 `MESSAGE_CHARS = 4000` 字,工具调用只写工具名和文件名,工具返回的内容不带;截掉了就注明);`prompt` = 最近 20 条聊天。早期版本只带最近 8 条消息的摘要,用户指出主会话干的活一多 Clawd 就不知道了,而他想要的是"知道整个会话"和"选哪个模型"两件事分开(比如主会话用 Opus,聊天用 Sonnet),所以改成带整段对话。实测:暗号说在第 1 轮,之后又聊 5 轮(超出旧的 8 条),Haiku 仍答得出。这种方式没有缓存,每句都按发送的长度计费。
   - `main` 用 `$.model.fork`:在主会话自己的对话后追加人设和聊天记录,用主会话的模型,前缀走缓存,不带工具,也不会写进主对话。主会话还没回答过时返回 `nothing-to-fork`,自动改用 haiku 并在面板里注明。
   - 人设里要求只说话、不写星号动作(Haiku 一开始会写 `*bounces excitedly*`)。
 - **音乐模式下有事先忙**:开着音乐时,Claude 在工作就戴着耳机做工作姿势,Clawd 在想怎么回话就戴着耳机做思考姿势,只有两样都没有时才跳舞(渲染分支的顺序:工作 → 庆祝 → 被点 → 想回话 → 跳舞 → 空闲)。
@@ -165,6 +165,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
 - 本机 `~/.claude/skills/clawd-buddy` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
 - v1.0.0:2026-10-03 首个正式版,当时叫 clawd-spinner。
+- v1.3.1:haiku/sonnet/opus 聊天时带上整个会话的对话副本(`SCENE_CHARS` 4 万字),README 新增"设置默认的聊天模型"一节。
 - v1.3.0:`/clawd model` / `/clawd effort`(写回 `/config`,新增 `chatEffort`),聊天记录存进 `$.state`(切换模型后不丢),小屏时限制聊天面板高度给 Clawd 留位置、放不下就让位,气泡英文按空格折行。
 - v1.2.0:可以和 Clawd 聊天(`/clawd chat`、聊天面板、对话气泡、`chatModel` 配置)。
 - v1.1.0:改名 **clawd-buddy**(它已经不只是替换 spinner,而是常驻的吉祥物),命令缩短为 `/clawd`;加了音乐模式的音乐条。插件和市场都改了名:`marketplace.json` 里留了 `renames: { "clawd-spinner": "clawd-buddy" }`,但市场本身也改了名,而市场是按名字识别的,1.0.0 的用户要删掉旧插件和旧市场再重装(README 里有命令)。`$.store`(隐藏状态)和 `pluginConfigs`(语言)按插件名存,改名后各重置一次。`native/Info.plist` 的 `dev.clawd-spinner.clawd-ears` 故意没改:改了就会重新编译,macOS 又要重新授权录音。本地目录已改为 `~/mods/clawd-buddy`,软链接改为 `~/.claude/skills/clawd-buddy`;Claude Code 的项目数据按路径存在 `~/.claude/projects/-Users-liangzhanbo-mods-clawd-buddy/`,旧的 `...-clawd-spinner/` 里只剩已归档会话的记录。

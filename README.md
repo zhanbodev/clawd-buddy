@@ -25,6 +25,10 @@
 
 ## What's new
 
+**1.3.1**
+
+- **Clawd knows the whole session with any chat model**: `haiku`, `sonnet` and `opus` now get a copy of your conversation with Claude so far (the newest 40,000 characters or so), not just the last few messages. So you can run the session on Opus and chat with Clawd on Sonnet, and it still knows everything Claude did. See [Pick the chat model](#pick-the-chat-model).
+
 **1.3.0**
 
 - **Switch the chat model and effort from the prompt**: `/clawd model sonnet` and `/clawd effort high`. Both are saved to `/config`, and switching keeps the chat so far.
@@ -164,10 +168,30 @@ Clawd doesn't only watch: you can chat with it.
 
 - Run `/clawd chat`, or `/clawd chat hi Clawd!` to say something right away. A **chat pane** opens beside the transcript, or above the prompt in a narrow terminal, with the whole chat so far and a box to keep typing in. Press Esc to go back to the prompt; the pane stays, so you can keep reading.
 - When Clawd answers, it hops, and a **speech bubble** with its reply pops up beside it for a few seconds. The full reply is in the pane.
-- Clawd knows what's going on: what Claude is doing right now and the latest of your conversation. It can't run tools or change files, so for real work it sends you back to Claude.
+- Clawd knows what's going on: what Claude is doing right now and your whole conversation with Claude so far, however long the session runs. It can't run tools or change files, so for real work it sends you back to Claude.
 - The chat **stays out of Claude's conversation**: nothing you say to Clawd reaches Claude, and the chat is forgotten when the session ends.
 - Choose who answers with `/clawd model sonnet` (or under **Chat model / 聊天模型** in `/config`, below), and how hard it thinks with `/clawd effort high`. Both are saved to your settings, and switching keeps the chat so far.
 - The pane takes its background from Claude Code's theme, while the main transcript shows your terminal's own background. To have the pane match your terminal exactly, pick an ANSI theme with `/theme`: **Dark mode (ANSI colors only)** for a dark terminal (`"theme": "dark-ansi"`), or its light counterpart for a light one. With `light` in a dark terminal the pane comes out white; `dark` gives a dark gray close to most dark terminals.
+
+### Pick the chat model
+
+Clawd's chat has a model of its own, separate from the session's: run the session on Opus and chat with Clawd on Sonnet, say. The chat uses `haiku` until you pick another, and your pick becomes the default for every session after. Pick it any of these ways:
+
+- **From the prompt**: `/clawd model sonnet`. Run `/clawd model` alone to see the current one.
+- **In `/config`**: find **Chat model / 聊天模型** and choose.
+- **In `~/.claude/settings.json`**, under the plugin's id (`clawd-buddy@clawd-buddy` when installed from the marketplace, `clawd-buddy@inline` when loaded with `--plugin-dir`):
+
+  ```json
+  {
+    "pluginConfigs": {
+      "clawd-buddy@clawd-buddy": {
+        "options": { "chatModel": "sonnet", "chatEffort": "default" }
+      }
+    }
+  }
+  ```
+
+`/clawd effort` and **Chat effort / 聊天思考强度** set how hard it thinks the same way. What each model knows and costs is under [Settings](#settings).
 
 ## Music mode
 
@@ -201,9 +225,9 @@ And **Chat model / 聊天模型**, for who answers when you chat with Clawd:
 
 | Value | Effect |
 | :-- | :-- |
-| `haiku` (default) | Fast and light. Gets what Claude is doing and a short digest of your latest messages |
-| `sonnet`, `opus` | The same digest, answered by a bigger model |
-| `main` | Forks the session's own conversation, on the session's own model: Clawd knows everything said so far. Costs more, and takes longer. Before the session's first answer, haiku stands in |
+| `haiku` (default) | Fast and light. Gets what Claude is doing and a copy of your conversation so far (the newest 40,000 characters or so, each message's words and the tools and files it used) |
+| `sonnet`, `opus` | The same copy, answered by a bigger model. Chat with Sonnet while the session itself runs on Opus, say |
+| `main` | Forks the session's own conversation, on the session's own model, from its prompt cache: Clawd knows everything, with nothing cut. Costs more, and takes longer. Before the session's first answer, haiku stands in |
 
 And **Chat effort / 聊天思考强度**, set with `/clawd effort`: `default` (leave it to the model), or `low` to `max`. Models without an effort setting ignore it, and `main` uses the session's own.
 

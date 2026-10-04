@@ -25,6 +25,10 @@
 
 ## 最新改进
 
+**1.3.1**
+
+- **选哪个聊天模型,Clawd 都知道整个会话**:`haiku`、`sonnet`、`opus` 现在会拿到你和 Claude 到目前为止的对话副本(最新的约 4 万字),而不只是最近几条消息。所以主会话用 Opus、和 Clawd 聊天用 Sonnet 时,它照样知道 Claude 做过的所有事。见[设置默认的聊天模型](#设置默认的聊天模型)。
+
 **1.3.0**
 
 - **在输入框里切换聊天模型和思考强度**:`/clawd model sonnet`、`/clawd effort high`。两者都会存进 `/config`,切换后之前的聊天记录还在。
@@ -164,10 +168,30 @@ Clawd 不只是看着,你还可以直接跟它说话。
 
 - 输入 `/clawd chat`,或者 `/clawd chat 你好呀` 直接说一句。会打开一个**聊天面板**:宽的终端里停靠在对话右侧,窄的终端里在输入框上方。面板里是完整的聊天记录,下面有输入框可以接着聊。按 Esc 回到主输入框,面板留着,方便边干活边看。
 - Clawd 回复时会跳一下,身边冒出一个**对话气泡**显示它说的话,几秒后消失;完整内容在面板里。
-- Clawd 知道现在在发生什么:Claude 正在做什么,以及你们最近聊了些什么。它不能跑工具、不能改文件,真要干活时它会让你去找 Claude。
+- Clawd 知道现在在发生什么:Claude 正在做什么,以及你和 Claude 到目前为止的整个对话,会话再长也一样。它不能跑工具、不能改文件,真要干活时它会让你去找 Claude。
 - 聊天**不进入 Claude 的对话**:你和 Clawd 说的话 Claude 看不到;会话结束,聊天记录也就忘了。
 - 用 `/clawd model sonnet` 切换谁来回答(也可以在 `/config` 的 **Chat model / 聊天模型** 里选,见下面的设置),用 `/clawd effort high` 调整思考强度。两者都会存进设置,切换后之前的聊天记录还在。
 - 面板的底色由 Claude Code 的主题决定,而主对话区透出的是终端自己的底色。想让面板和终端完全一样,用 `/theme` 选 ANSI 主题:深色终端选 **Dark mode (ANSI colors only)**(`"theme": "dark-ansi"`),浅色终端选对应的浅色 ANSI 主题。深色终端配 `light` 主题时面板会是白色;选 `dark` 是接近多数深色终端的深灰。
+
+### 设置默认的聊天模型
+
+和 Clawd 聊天用的模型是单独设置的,和主会话无关:比如主会话用 Opus,和 Clawd 聊天用 Sonnet。没设置时默认用 `haiku`,设置一次之后,以后每个会话都默认用你选的模型。三种设置方法任选其一:
+
+- **在输入框里**:`/clawd model sonnet`。只输入 `/clawd model` 可以查看现在用的是哪个。
+- **在 `/config` 里**:找到 **Chat model / 聊天模型**,选一个。
+- **在 `~/.claude/settings.json` 里**,写在插件 id 下面(从插件市场安装时是 `clawd-buddy@clawd-buddy`,用 `--plugin-dir` 加载时是 `clawd-buddy@inline`):
+
+  ```json
+  {
+    "pluginConfigs": {
+      "clawd-buddy@clawd-buddy": {
+        "options": { "chatModel": "sonnet", "chatEffort": "default" }
+      }
+    }
+  }
+  ```
+
+思考强度同理,用 `/clawd effort` 或 `/config` 里的 **Chat effort / 聊天思考强度** 设置。各个模型分别知道多少、贵不贵,见[设置](#设置)。
 
 ## 音乐模式
 
@@ -201,9 +225,9 @@ Clawd 不只是看着,你还可以直接跟它说话。
 
 | 值 | 效果 |
 | :-- | :-- |
-| `haiku`(默认) | 又快又省。拿到 Claude 正在做什么,以及最近几句对话的摘要 |
-| `sonnet`、`opus` | 同样的摘要,换更大的模型回答 |
-| `main` | 分叉主会话,用主会话的模型:Clawd 知道到目前为止的完整对话。更贵,也更慢。主会话还没有回答过时,先由 haiku 代答 |
+| `haiku`(默认) | 又快又省。拿到 Claude 正在做什么,以及到目前为止的对话副本(最新的约 4 万字:每条消息的文字和用到的工具、文件) |
+| `sonnet`、`opus` | 同样的对话副本,换更大的模型回答。比如主会话用 Opus,和 Clawd 聊天用 Sonnet |
+| `main` | 分叉主会话,用主会话的模型,走提示缓存:Clawd 知道完整对话,一点不截。更贵,也更慢。主会话还没有回答过时,先由 haiku 代答 |
 
 还有 **Chat effort / 聊天思考强度**,用 `/clawd effort` 设置:`default`(交给模型决定),或 `low` 到 `max`。不支持的模型会忽略它,`main` 沿用主会话的设置。
 
