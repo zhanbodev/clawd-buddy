@@ -8,12 +8,13 @@
 
 <p align="center">
   让 Claude Code 的像素小吉祥物 <b>Clawd</b> 住进你的终端。<br>
-  它站在输入框上方,跟着 Claude 的工作切换动作,会冒代码泡泡,会听歌跳舞,点它一下还会跳起来。
+  它站在输入框上方,跟着 Claude 的工作切换动作,会冒代码泡泡,会听歌跳舞,点它一下还会跳起来,还能陪你聊天。
 </p>
 
 <p align="center">
   <a href="#安装">安装</a> ·
   <a href="#命令">命令</a> ·
+  <a href="#和-clawd-聊天">和 Clawd 聊天</a> ·
   <a href="#音乐模式">音乐模式</a> ·
   <a href="#设置">设置</a> ·
   <a href="#开发">开发</a>
@@ -57,7 +58,7 @@
 - **选不中**:用鼠标拖选文字时不会把 Clawd 选进去,复制不到它。
 - **说人话**:旁边写着"编辑中… · register.js",只显示文件名,不显示其他任何工具输入。
 - **中英双语**:跟随系统语言,也可以手动指定。
-- **零成本**:不调用任何模型,也不联网。
+- **看它免费**:除了聊天,其他功能都不调用模型、不联网。聊天时用你自己的 Claude 账号调用模型,只在你发消息时才调用。
 
 ## 安装
 
@@ -133,20 +134,34 @@ claude --plugin-dir ~/mods/clawd-buddy
 | :-- | :-- |
 | `/clawd show` | 让 Clawd 出来 |
 | `/clawd hidden` | 把 Clawd 藏起来,下次打开 Claude Code 也还是藏着 |
-| `/clawd startmusic` | 开启音乐模式 |
-| `/clawd stopmusic` | 关闭音乐模式 |
+| `/clawd music start` | 开启音乐模式 |
+| `/clawd music stop` | 关闭音乐模式 |
+| `/clawd chat` | 打开和 Clawd 的聊天,直接打字 |
+| `/clawd chat 想说的话` | 对 Clawd 说一句话 |
+| `/clawd chat close` / `clear` | 关闭聊天 / 清空聊天记录 |
+
+## 和 Clawd 聊天
+
+Clawd 不只是看着,你还可以直接跟它说话。
+
+- 输入 `/clawd chat`,或者 `/clawd chat 你好呀` 直接说一句。会打开一个**聊天面板**:宽的终端里停靠在对话右侧,窄的终端里在输入框上方。面板里是完整的聊天记录,下面有输入框可以接着聊。按 Esc 回到主输入框,面板留着,方便边干活边看。
+- Clawd 回复时会跳一下,身边冒出一个**对话气泡**显示它说的话,几秒后消失;完整内容在面板里。
+- Clawd 知道现在在发生什么:Claude 正在做什么,以及你们最近聊了些什么。它不能跑工具、不能改文件,真要干活时它会让你去找 Claude。
+- 聊天**不进入 Claude 的对话**:你和 Clawd 说的话 Claude 看不到;会话结束,聊天记录也就忘了。
+- 谁来回答可以在 `/config` 的 **Chat model / 聊天模型** 里选,见下面的设置。
+- 面板的底色由 Claude Code 的主题决定,而主对话区透出的是终端自己的底色。想让面板和终端完全一样,用 `/theme` 选 ANSI 主题:深色终端选 **Dark mode (ANSI colors only)**(`"theme": "dark-ansi"`),浅色终端选对应的浅色 ANSI 主题。深色终端配 `light` 主题时面板会是白色;选 `dark` 是接近多数深色终端的深灰。
 
 ## 音乐模式
 
 **怎么开**
 
-1. 先放一首歌,然后输入 `/clawd startmusic`。第一次会花几秒钟编译一个听音乐的小程序,之后就直接用了。
+1. 先放一首歌,然后输入 `/clawd music start`。第一次会花几秒钟编译一个听音乐的小程序,之后就直接用了。
 2. macOS 会弹窗问 **clawd-ears 是否可以录制系统音频**,点"允许"。
 3. Clawd 戴上耳机,开始跟着节拍跳。
 
 **没弹窗,或者之前点了不允许?**
 
-打开 **系统设置 → 隐私与安全性 → 录屏与系统录音**,在下方"仅系统录音"列表里找到 **clawd-ears**,把开关打开。然后输入 `/clawd stopmusic`,再输入 `/clawd startmusic`。
+打开 **系统设置 → 隐私与安全性 → 录屏与系统录音**,在下方"仅系统录音"列表里找到 **clawd-ears**,把开关打开。然后输入 `/clawd music stop`,再输入 `/clawd music start`。
 
 **它听到了什么**
 
@@ -163,6 +178,14 @@ claude --plugin-dir ~/mods/clawd-buddy
 | `auto`(默认) | 跟随系统语言:`LC_ALL`、`LC_MESSAGES`、`LANG` 里第一个设了的值以 `zh` 开头就用中文,否则英文 |
 | `zh` | 中文 |
 | `en` | English |
+
+还有 **Chat model / 聊天模型**,决定和 Clawd 聊天时谁来回答:
+
+| 值 | 效果 |
+| :-- | :-- |
+| `haiku`(默认) | 又快又省。拿到 Claude 正在做什么,以及最近几句对话的摘要 |
+| `sonnet`、`opus` | 同样的摘要,换更大的模型回答 |
+| `main` | 分叉主会话,用主会话的模型:Clawd 知道到目前为止的完整对话。更贵,也更慢。主会话还没有回答过时,先由 haiku 代答 |
 
 ## 它是怎么画出来的
 

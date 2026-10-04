@@ -65,14 +65,30 @@ const EQ_BARS = 5
 const EQ_MAX = 6
 const EQ_COLOR = 0xc4704a
 
+// Chatting with Clawd: the pane the chat shows in, the most messages it keeps, how many of
+// them a reply reads, and how many messages of the session's own conversation it's told of
+const CHAT_PANE = 'clawd-chat'
+const CHAT_KEEP = 50
+const CHAT_READS = 20
+const SCENE_MESSAGES = 8
+// The models a reply can come from: an alias for $.model.complete, or `main`, a fork of the
+// session's own conversation on its own model
+const CHAT_MODELS = ['haiku', 'sonnet', 'opus', 'main']
+// The speech bubble beside the mascot: its widest, in terminal columns, and how long it stays
+const BUBBLE_WIDTH = 36
+const BUBBLE_MIN_MS = 6000
+const BUBBLE_MAX_MS = 20000
+// While Claude works, a reply shows only this long before the mascot gets back to work
+const BUBBLE_WORKING_MS = 5000
+
 // What the mascot says, in each language the `language` option offers: the caption beside
 // each pose, and the cheers it picks from when a task is done
 const WORDS = {
   zh: {
     poses: { think: '思考中', read: '阅读中', edit: '编辑中', bash: '运行中', search: '搜索中' },
     cheers: ['任务完成!', '搞定啦!', '干得漂亮!', '太棒了!'],
-    command: '显示或隐藏 Clawd,或开关音乐模式',
-    usage: '用法:/clawd show | hidden | startmusic | stopmusic',
+    command: '显示或隐藏 Clawd、开关音乐模式,或和 Clawd 聊天',
+    usage: '用法:/clawd show | hidden | music [start | stop] | chat [想说的话 | close | clear]',
     shown: 'Clawd 出来啦。',
     hidden: 'Clawd 已隐藏,输入 /clawd show 让它回来。',
     hiddenMusic: 'Clawd 已隐藏,音乐模式也一起关了。输入 /clawd show 让它回来。',
@@ -81,19 +97,29 @@ const WORDS = {
       'Clawd 戴上耳机了,会跟着这台 Mac 正在播放的音乐摇摆。只读取声音有多响,不用麦克风,也不保存任何声音。\n' +
       '第一次开启时,macOS 会弹窗问"clawd-ears"能否录制系统音频,点"允许"即可。\n' +
       '如果放着音乐 Clawd 却不动(比如之前点了不允许):打开 系统设置 → 隐私与安全性 → 录屏与系统录音,' +
-      '在下方"仅系统录音"列表里找到 clawd-ears 并打开开关,然后输入 /clawd stopmusic 再 /clawd startmusic。',
+      '在下方"仅系统录音"列表里找到 clawd-ears 并打开开关,然后输入 /clawd music stop 再 /clawd music start。',
     musicAlready: '音乐模式已经开着了。',
     musicOff: '音乐模式已关闭,耳机摘下来了。',
     musicNotOn: '音乐模式本来就是关着的。',
     musicHidden: 'Clawd 现在是隐藏的,先输入 /clawd show。',
     musicFailed: '音乐模式开不了:',
     musicStopped: 'Clawd 的音乐模式停了:',
+    chatYou: '你',
+    chatPlaceholder: '跟 Clawd 说点什么…(Esc 回到主输入框)',
+    chatSend: '发送',
+    chatThinking: 'Clawd 正在想…',
+    chatHello: '跟 Clawd 打个招呼吧。它看得到 Claude 在做什么,但不会动你的文件。聊天内容不会进入 Claude 的对话。',
+    chatFailed: 'Clawd 没听清:',
+    chatFallback: '主会话还没有能分叉的对话,这次先用 haiku 回答。',
+    chatCleared: '和 Clawd 的聊天记录清空了。',
+    chatLanguage: 'Reply in Simplified Chinese, unless the user writes to you in another language.',
+    chatHint: '想说的话 | close | clear',
   },
   en: {
     poses: { think: 'Thinking', read: 'Reading', edit: 'Editing', bash: 'Running', search: 'Searching' },
     cheers: ['All done!', 'Nailed it!', 'Great job!', 'Awesome!'],
-    command: 'Show or hide Clawd, or turn music mode on or off',
-    usage: 'Usage: /clawd show | hidden | startmusic | stopmusic',
+    command: 'Show or hide Clawd, turn music mode on or off, or chat with Clawd',
+    usage: 'Usage: /clawd show | hidden | music [start | stop] | chat [message | close | clear]',
     shown: 'Clawd is back.',
     hidden: 'Clawd is hidden. Run /clawd show to bring it back.',
     hiddenMusic: 'Clawd is hidden, and music mode is off too. Run /clawd show to bring it back.',
@@ -102,13 +128,23 @@ const WORDS = {
       'Clawd has its headphones on and moves to whatever this Mac is playing. It reads only how loud the sound is, never the microphone, and keeps no audio.\n' +
       'The first time, macOS asks whether "clawd-ears" may record system audio: click Allow.\n' +
       'If music plays and Clawd stays still (say you clicked Don\'t Allow): open System Settings → Privacy & Security → Screen & System Audio Recording, ' +
-      'find clawd-ears in the "System Audio Recording Only" list and switch it on, then run /clawd stopmusic and /clawd startmusic.',
+      'find clawd-ears in the "System Audio Recording Only" list and switch it on, then run /clawd music stop and /clawd music start.',
     musicAlready: 'Music mode is already on.',
     musicOff: 'Music mode is off, and the headphones are off.',
     musicNotOn: 'Music mode was already off.',
     musicHidden: 'Clawd is hidden. Run /clawd show first.',
     musicFailed: "Music mode couldn't start: ",
     musicStopped: "Clawd's music mode stopped: ",
+    chatYou: 'You',
+    chatPlaceholder: 'Say something to Clawd… (Esc goes back to the prompt)',
+    chatSend: 'send',
+    chatThinking: 'Clawd is thinking…',
+    chatHello: "Say hi to Clawd. It can see what Claude is doing, but it never touches your files. The chat stays out of Claude's conversation.",
+    chatFailed: "Clawd didn't catch that: ",
+    chatFallback: 'The session has no conversation to fork yet, so haiku answers this one.',
+    chatCleared: 'The chat with Clawd is cleared.',
+    chatLanguage: 'Reply in English, unless the user writes to you in another language.',
+    chatHint: 'message | close | clear',
   },
 }
 
@@ -577,8 +613,10 @@ let celebration = null
 let celebrationStep = 0
 // Hidden with /clawd hidden, which lasts across sessions
 let hidden = false
-// While the mascot reacts to a click, the frame of POKE it's on; else -1
+// While the mascot reacts to a click, the frame of POKE it's on; else -1. A reply from a chat
+// plays only the hop, up to frame pokeLast.
 let poke = -1
+let pokeLast = POKE.length - 1
 // While music mode is on, the program listening to the music, as { ears }; else null
 let music = null
 // What the music is doing, for danceFrame: how loud, how many beats so far, the step the last
@@ -688,6 +726,163 @@ function stopMusic() {
 // The words in use, for the helpers above that run outside a hook
 let WORDS_NOW = WORDS.zh
 
+// The chat with Clawd, for this session only: its messages, each { role, text } with role
+// 'user', 'clawd' or 'note'; whether a reply is on its way, and whether more was said
+// meanwhile; the speech bubble beside the mascot, { text, until }; and the model replies
+// come from
+const chat = { history: [], pending: false, again: false, bubble: null, model: 'haiku' }
+
+// Who Clawd is, for the model that speaks for it
+function persona() {
+  return [
+    "You are Clawd, the little pixel mascot of Claude Code. You live just above the user's prompt in their terminal, watching them and Claude work, and you dance when they play music.",
+    "You are their buddy, not their coding agent: you can't run tools, read files or change anything. When they want work done, cheer them on and suggest they ask Claude in the main prompt.",
+    'Keep replies short, one to three sentences, unless they ask for more. Be warm, playful and honest, and never make up what Claude did.',
+    'Speak only your words: no actions or stage directions in asterisks or brackets.',
+    WORDS_NOW.chatLanguage,
+  ].join('\n')
+}
+
+// What's going on, for a model that can't see the session itself: whether Claude is working,
+// and the latest few messages of the user's conversation with Claude, each cut short, its tool
+// calls reduced to the tool and the file's name
+async function sceneDigest($) {
+  let messages = []
+  try {
+    messages = await $.session.messages()
+  } catch {}
+  const lines = []
+  for (const m of messages.slice(-SCENE_MESSAGES)) {
+    const tools = (m.toolUses || []).map((use) => {
+      const file = use.input && (use.input.file_path || use.input.notebook_path || use.input.path)
+      return file ? use.tool + ' ' + String(file).split('/').pop() : use.tool
+    })
+    const text = String(m.text || '').replace(/\s+/g, ' ').trim().slice(0, 400)
+    if (!text && tools.length === 0) continue
+    lines.push((m.role === 'user' ? 'User: ' : 'Claude: ') + text + (tools.length ? ' [tools: ' + tools.join(', ') + ']' : ''))
+  }
+  const now = isWorking
+    ? 'Claude is working right now (' + pose + (target ? ', on ' + target : '') + ').'
+    : 'Claude is waiting for the user.'
+  return (now + "\nThe latest of the user's conversation with Claude:\n" + (lines.join('\n') || '(nothing yet)')).slice(-6000)
+}
+
+// One reply from Clawd to the chat so far, as a chat message: from a fork of the session's
+// own conversation in `main` mode, else from the configured model told what's going on. A
+// failure comes back as a note saying why.
+async function clawdReply($) {
+  const said = chat.history
+    .filter((m) => m.role !== 'note')
+    .slice(-CHAT_READS)
+    .map((m) => (m.role === 'user' ? 'User: ' : 'Clawd: ') + m.text)
+    .join('\n\n')
+  const why = (r) => WORDS_NOW.chatFailed + String(r.reason === 'api-error' ? r.error || r.status || r.reason : r.reason)
+  try {
+    if (chat.model === 'main') {
+      const r = await $.model.fork({
+        prompt:
+          persona() +
+          '\n\nThis is a side chat with Clawd, the mascot, about what is going on; it is not a request to act. Answer only as Clawd would.\n\nThe chat so far:\n' +
+          said +
+          '\n\nClawd:',
+      })
+      if (r.isAnswered) return { role: 'clawd', text: r.text.trim() }
+      if (r.reason !== 'nothing-to-fork') return { role: 'note', text: why(r) }
+      chat.history.push({ role: 'note', text: WORDS_NOW.chatFallback })
+    }
+    const r = await $.model.complete({
+      model: chat.model === 'main' ? 'haiku' : chat.model,
+      system: persona() + '\n\n' + (await sceneDigest($)),
+      prompt: 'The chat so far:\n' + said + "\n\nReply as Clawd to the user's last message.",
+      maxTokens: 800,
+      timeoutMs: 60000,
+    })
+    return r.isAnswered ? { role: 'clawd', text: r.text.trim() } : { role: 'note', text: why(r) }
+  } catch (err) {
+    return { role: 'note', text: WORDS_NOW.chatFailed + String((err && err.message) || err) }
+  }
+}
+
+// The user said something to Clawd: keep it, and get a reply. One reply at a time; whatever
+// is said while one is on its way is answered together once it arrives.
+async function say($, text) {
+  chat.history.push({ role: 'user', text })
+  chat.bubble = null
+  if (chat.pending) {
+    chat.again = true
+    return chatChanged($)
+  }
+  chat.pending = true
+  chatChanged($)
+  do {
+    chat.again = false
+    const reply = await clawdReply($)
+    chat.history.push(reply)
+    if (reply.role === 'clawd') {
+      const ms = isWorking
+        ? BUBBLE_WORKING_MS
+        : Math.min(BUBBLE_MAX_MS, Math.max(BUBBLE_MIN_MS, reply.text.length * 120))
+      chat.bubble = { text: reply.text, until: (await $.clock.now()) + ms }
+      // A hop as the reply lands, unless the mascot is busy
+      if (!isWorking && !celebration) {
+        poke = 0
+        pokeLast = 4
+      }
+    }
+  } while (chat.again)
+  chat.pending = false
+  chatChanged($)
+}
+
+// Redraw after the chat changed, trimmed to its last CHAT_KEEP messages, and once the pane has
+// drawn the change, scroll it to the bottom
+function chatChanged($) {
+  if (chat.history.length > CHAT_KEEP) chat.history.splice(0, chat.history.length - CHAT_KEEP)
+  $.ui.invalidate('ui.render')
+  $.clock
+    .sleep(100)
+    .then(() => $.ui.scroll({ to: { key: 'clawd-chat-input' }, in: CHAT_PANE, block: 'end' }))
+    .catch(() => {})
+}
+
+// How many terminal columns a character takes: two for wide East Asian characters and emoji
+function cellsOf(ch) {
+  return /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]|[\u{1f300}-\u{1faff}]/u.test(ch) ? 2 : 1
+}
+
+// A reply fitted into the speech bubble: Markdown marks dropped, wrapped to width columns,
+// at most lines lines, the last ending in … when it doesn't all fit
+function bubbleLines(text, width, lines) {
+  const flat = text.replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim()
+  const out = ['']
+  let used = 0
+  for (const ch of flat) {
+    const w = cellsOf(ch)
+    if (used + w > width) {
+      if (out.length === lines) {
+        out[lines - 1] = out[lines - 1].replace(/.$/u, '…')
+        return out
+      }
+      out.push('')
+      used = 0
+      if (ch === ' ') continue
+    }
+    out[out.length - 1] += ch
+    used += w
+  }
+  return out
+}
+
+// What /clawd takes next, once a subcommand that takes more is typed: drawn dim at the end of
+// the hint line under the prompt, since the typeahead's own hint shows only the subcommands,
+// and only until anything is typed after /clawd
+let subHint = ''
+function subHintFor(draft) {
+  if (/^\/clawd\s+music\s/.test(draft)) return '/clawd music: start | stop'
+  if (/^\/clawd\s+chat\s/.test(draft)) return '/clawd chat: ' + WORDS_NOW.chatHint
+  return ''
+}
+
 export function register(on, options) {
   // The language the mascot speaks: the one the `language` option picks, or with `auto`, the
   // one the locale names, as any program reads it. Chinese locales get Chinese, others English.
@@ -702,15 +897,21 @@ export function register(on, options) {
       words = locale.toLowerCase().startsWith('zh') ? WORDS.zh : WORDS.en
     }
     WORDS_NOW = words
+    chat.model = CHAT_MODELS.includes(options && options.chatModel) ? options.chatModel : 'haiku'
     hidden = (await $.store.get('hidden')) === true
     await $.command.register({
       name: 'clawd',
       description: words.command,
-      argumentHint: 'show | hidden | startmusic | stopmusic',
+      argumentHint: 'show | hidden | music | chat',
       immediate: true,
     })
     $.clock.every(FRAME_MS, async () => {
       if (hidden) return
+      // The speech bubble goes once it has been read
+      if (chat.bubble && (await $.clock.now()) > chat.bubble.until) {
+        chat.bubble = null
+        $.ui.invalidate('ui.render')
+      }
       // Notes float up and away, and loud music with no beat found still gives off a note now
       // and then
       if (music) {
@@ -732,10 +933,10 @@ export function register(on, options) {
         if (celebrationStep >= CELEBRATE_FRAMES) celebration = null
         $.ui.invalidate('ui.render')
       } else if (poke >= 0) {
-        poke = poke + 1 < POKE.length ? poke + 1 : -1
+        poke = poke < pokeLast ? poke + 1 : -1
         step += 1
         $.ui.invalidate('ui.render')
-      } else if (music && (dance.level > 0 || dance.notes.length > 0)) {
+      } else if (chat.pending || (music && (dance.level > 0 || dance.notes.length > 0))) {
         step += 1
         $.ui.invalidate('ui.render')
       } else {
@@ -755,6 +956,7 @@ export function register(on, options) {
     if (e.element !== 'clawd') return next(e)
     if (e.data && e.data.poke && !isWorking && !celebration) {
       poke = 0
+      pokeLast = POKE.length - 1
       $.ui.invalidate('ui.render')
     }
     return {}
@@ -763,6 +965,8 @@ export function register(on, options) {
   on('turn.start', async ($, e, next) => {
     isWorking = true
     poke = -1
+    // Back to work: a word from the chat makes way for what Claude is doing
+    chat.bubble = null
     pose = 'think'
     target = ''
     turnStartedAt = await $.clock.now()
@@ -802,10 +1006,46 @@ export function register(on, options) {
     return next(e)
   })
 
-  // /clawd show | hidden | startmusic | stopmusic
+  // As /clawd music or /clawd chat is typed, what comes next shows under the prompt
+  on('prompt.edit', async ($, e, next) => {
+    const result = await next(e)
+    const wanted = subHintFor(e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end))
+    if (wanted !== subHint) {
+      subHint = wanted
+      $.ui.invalidate('ui.render')
+    }
+    return result
+  })
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    if (!subHint) return next(e)
+    return next({ ...e, props: { ...e.props, tail: subHint } })
+  })
+
+  // /clawd show | hidden | music [start | stop] | chat [message | close | clear]. The old
+  // startmusic and stopmusic still work, for anyone used to them.
   on('command.run', { command: 'clawd' }, async ($, e) => {
-    const arg = String(e.args || '').trim().toLowerCase()
+    const arg = String(e.args || '').trim().toLowerCase().replace(/\s+/g, ' ')
+    const musicOn = arg === 'music start' || arg === 'music on' || arg === 'startmusic'
+    const musicOff = arg === 'music stop' || arg === 'music off' || arg === 'stopmusic'
     let text = words.usage
+    if (arg === 'chat' || arg.startsWith('chat ')) {
+      // What's said goes to the chat pane and the bubble, never into Claude's conversation: the
+      // command answers with no text and no context
+      const message = String(e.args).trim().slice(4).trim()
+      if (message.toLowerCase() === 'close') {
+        await $.ui.close({ id: CHAT_PANE }).catch(() => {})
+        return {}
+      }
+      if (message.toLowerCase() === 'clear') {
+        Object.assign(chat, { history: [], bubble: null })
+        $.ui.invalidate('ui.render')
+        return { text: words.chatCleared }
+      }
+      // With nothing to say yet, the pane takes the keyboard so the user can type in it
+      await $.ui.open({ id: CHAT_PANE, title: 'Clawd', ...(message ? {} : { focus: true }) })
+      if (message) void say($, message)
+      return {}
+    }
     if (arg === 'show') {
       hidden = false
       await $.store.set('hidden', false)
@@ -815,7 +1055,7 @@ export function register(on, options) {
       stopMusic()
       hidden = true
       await $.store.set('hidden', true)
-    } else if (arg === 'startmusic') {
+    } else if (musicOn) {
       if (hidden) text = words.musicHidden
       else if (music) text = words.musicAlready
       else {
@@ -826,12 +1066,51 @@ export function register(on, options) {
           text = words.musicFailed + String((err && err.message) || err)
         }
       }
-    } else if (arg === 'stopmusic') {
+    } else if (musicOff) {
       text = music ? words.musicOff : words.musicNotOn
       stopMusic()
     }
     $.ui.invalidate('ui.render')
     return { text }
+  })
+
+  // The chat with Clawd, in its own pane: every message so far, then a box to say more
+  on('ui.render', { component: 'Pane' }, async ($, e, next) => {
+    if (e.requestId !== CHAT_PANE) return next(e)
+    const { Box, Text, Input } = $.ui.resolve(e)
+    const rows = []
+    if (chat.history.length === 0 && !chat.pending) rows.push(Text({ children: [words.chatHello], color: 'inactive' }))
+    chat.history.forEach((m, i) => {
+      if (m.role === 'note') {
+        rows.push(Text({ children: [m.text], color: 'inactive' }))
+        return
+      }
+      const isUser = m.role === 'user'
+      rows.push(
+        Box({
+          flexDirection: 'column',
+          children: [
+            Text({ children: [isUser ? words.chatYou : 'Clawd'], bold: true, color: isUser ? 'inactive' : 'claude' }),
+            Text({ children: [m.text], color: 'text', wrap: 'wrap' }),
+          ],
+        }),
+      )
+    })
+    if (chat.pending) rows.push(Text({ children: [words.chatThinking], color: 'claude' }))
+    rows.push(
+      Input({
+        key: 'clawd-chat-input',
+        placeholder: words.chatPlaceholder,
+        value: '',
+        submitLabel: words.chatSend,
+        autoFocus: true,
+        onSubmit: (value) => {
+          const message = String(value || '').trim()
+          if (message) void say($, message)
+        },
+      }),
+    )
+    return Box({ flexDirection: 'column', rowGap: 1, children: rows })
   })
 
   // The mascot at the right end of the band above the prompt, always there: acting out what
@@ -850,6 +1129,10 @@ export function register(on, options) {
       caption = celebration.cheer
     } else if (poke >= 0) {
       grid = pokeFrame(poke, music !== null, dance)
+    } else if (chat.pending) {
+      // Thinking up a reply to the chat, headphones still on in music mode: it dances only
+      // when it has nothing else to do
+      grid = workFrame('think', step, music !== null)
     } else if (music) {
       grid = danceFrame(step, dance)
     } else {
@@ -860,7 +1143,25 @@ export function register(on, options) {
     if (typeof e.props.maxRows === 'number' && e.props.maxRows < rows) return next(e)
     const { Box, Text, Client } = $.ui.resolve(e)
     const children = []
-    if (caption) {
+    // While Clawd answers the chat, and for a while after, a speech bubble beside it says so, in
+    // place of the caption; it's as tall as the drawing, so the band never grows for it. While
+    // Claude works the mascot keeps working and keeps its caption, and only its reply shows,
+    // briefly.
+    const speech = chat.pending && !isWorking ? '.'.repeat(1 + (step % 3)) : chat.bubble ? chat.bubble.text : ''
+    if (speech) {
+      const room = typeof e.props.bodyColumns === 'number' ? e.props.bodyColumns - grid[0].length / 2 - 8 : BUBBLE_WIDTH
+      const lines = bubbleLines(speech, Math.max(8, Math.min(BUBBLE_WIDTH, room) - 4), Math.max(1, rows - 2))
+      children.push(
+        Box({
+          borderStyle: 'round',
+          borderColor: 'gray',
+          paddingX: 1,
+          alignSelf: 'flex-end',
+          flexShrink: 1,
+          children: [Text({ children: [lines.join('\n')] })],
+        }),
+      )
+    } else if (caption) {
       // The caption sits right beside the mascot, on the middle row of its body
       children.push(
         Box({

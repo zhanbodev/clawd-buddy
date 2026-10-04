@@ -109,7 +109,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 在 `session.start` 里用 `$.command.register` 注册 `clawd`(`immediate: true`,回答进行中也能用):
 
 - `show` / `hidden`(也认 `hide`):显示或隐藏 Clawd。状态存在 `$.store` 的 `hidden`,跨会话保留。隐藏时区域直接 `next(e)`,时钟也不再重绘;隐藏会顺便关掉音乐模式。
-- `startmusic` / `stopmusic`:音乐模式。
+- `music start` / `music stop`:音乐模式。
 
 ### 音乐模式
 
@@ -118,6 +118,26 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - **权限**:需要"系统录音"权限。macOS 把权限算在"负责"这个进程的应用头上;从终端启动时那是终端应用(用户用的是 kitty),它的 Info.plist 没写录音用途,macOS 就**不弹窗、直接给静音**。所以 clawd-ears 一启动先用私有的 `responsibility_spawnattrs_setdisclaim` 拉起一个"自己负责自己"的副本(Claude 桌面应用的 disclaimer 也是这么做的),副本共用同一个输出管道;`native/Info.plist`(含 `NSAudioCaptureUsageDescription`)通过 `-sectcreate __TEXT __info_plist` 链进二进制。这样第一次开启会弹窗问"clawd-ears"能否录制系统音频,设置里也会出现 clawd-ears 这一项。外层进程等副本结束、转发 SIGTERM,发现自己的父进程没了就一起退出。两个进程合计约 22 MB。注意:ad-hoc 签名,重新编译后 macOS 可能会再问一次。
 - **画面**:空闲时换成 `danceFrame`(5 行):Clawd 戴银色头带、粉色耳罩的耳机,每个节拍跳起一像素、两脚交替踩,每 30 帧(约 4.5 秒)眨一次眼;音符是像素画(没用 ♪ 字符,它的宽度在 CJK 终端里不确定),从两侧耳罩轮流往上飘,`NOTE_LIFE` 帧后消失。没检测到节拍但响度 ≥3 时,每 6 帧也冒一个音符。两侧各有 5 根音乐条(`drawEqualizer`,画布左右各加宽 `EQ_W = 10` 像素,Clawd 跟着右移):高度按响度,每根每帧随机 ±1,节拍那一帧整体再高 1,静音时都是 1 像素。只用已有的响度和节拍,没做真正的频谱,这样不用改听音程序、不用重新编译(重新编译后 macOS 可能要求重新授权)。被点击时的 `pokeFrame` 也画同样的音乐条,避免画面左右跳。工作时照常做工作姿势,只是戴着耳机(`workFrame(pose, t, phones)`;侧面打字用 `drawHeadphonesSide`)。
 - 调试:`xcrun swiftc -O -D DEBUG_EARS ...` 编出的版本会往 stderr 打印每 50 ms 的采样数和响度。用 tmux 测 mod 时,可以临时把 `native/build/clawd-ears` 换成一个循环 `echo "6 1"` 的脚本来模拟节拍。
+
+### 和 Clawd 聊天(v1.2.0)
+
+起因:有用户问"只会跟着 Claude 的状态做反应,能不能直接跟它说话?"
+
+- **入口**:`/clawd chat [想说的话 | close | clear]`。命令返回 `{}`(不带 text 和 context),实测连命令那一行都不会留在对话记录里,聊天内容不会进入主模型的上下文;`clear` 会返回一行提示。
+- **聊天面板**:`$.ui.open({ id: 'clawd-chat', title: 'Clawd', focus })`,Pane 渲染钩子画出完整记录(用户的消息标"你",Clawd 的标橙色,正文用 `Markdown`)和一个 `Input`。只带 `/clawd chat` 时请求 `focus: true`,刚提交完命令输入框是空的,所以能拿到焦点;带话时不抢焦点。宽终端停靠在右侧,窄终端在输入框上方。每次变化后 `$.ui.scroll({ to: { key: 'clawd-chat-input' }, in: 'clawd-chat', block: 'end' })` 滚到底(先 `$.clock.sleep(100)` 等重绘)。
+- **对话气泡**:输入框上方区域里,在 Clawd 左边画圆角 `Box`,替换状态文字;行数 = 画布行数 − 2,区域不会变高。`bubbleLines` 自己折行(中文和 emoji 算两格),放不下的末尾用"…"。显示 `max(6s, 字数 × 0.12s)`,最长 20 秒。等待时气泡里是跳动的点,Clawd 换成思考姿势;回复到达时只播 `POKE` 的前 5 帧(跳一下,`pokeLast`)。
+- **谁来回答**:配置项 `chatModel`(`haiku` 默认 / `sonnet` / `opus` / `main`)。
+  - 前三个用 `$.model.complete`:`system` = 人设 + `sceneDigest`(Claude 是否在工作、当前姿势和文件,加上 `$.session.messages()` 最近 8 条,每条截到 400 字,工具只写工具名和文件名,总长不超过 6000 字);`prompt` = 最近 20 条聊天。
+  - `main` 用 `$.model.fork`:在主会话自己的对话后追加人设和聊天记录,用主会话的模型,前缀走缓存,不带工具,也不会写进主对话。主会话还没回答过时返回 `nothing-to-fork`,自动改用 haiku 并在面板里注明。
+  - 人设里要求只说话、不写星号动作(Haiku 一开始会写 `*bounces excitedly*`)。
+- **音乐模式下有事先忙**:开着音乐时,Claude 在工作就戴着耳机做工作姿势,Clawd 在想怎么回话就戴着耳机做思考姿势,只有两样都没有时才跳舞(渲染分支的顺序:工作 → 庆祝 → 被点 → 想回话 → 跳舞 → 空闲)。
+- **说完继续干活**:Claude 工作时,等回复期间照常显示工作姿势和状态文字(不出点点气泡),回复气泡只停 `BUBBLE_WORKING_MS = 5000` 毫秒,`turn.start` 时立刻清掉气泡;只有空闲时才换思考姿势、跳一下、气泡按字数停留。
+- **面板配色**:面板底色由 Claude Code 的主题决定(实测 light 主题是 256 色的 255 号近白,dark 是 235 号深灰),mod 改不了,也拿不到终端底色。用户的 `theme` 是 light 而终端是深色,所以面板发白。消息文字原来用 `Markdown`,它用终端默认前景色,在浅色底上几乎看不见;改成 `Text` 加主题色键(正文 `text`、Clawd 名字 `claude`、提示 `inactive`),在哪种主题下都看得清。根治办法是换主题:实测 `dark-ansi` 下面板输出 `49`(终端默认底色),和主对话区完全一致;`dark` 是 235 号深灰。mod 侧试过 Box `backgroundColor` 设 `default`/`transparent`/`reset`,都被忽略;设具体颜色只能涂到有内容的行,边距和标题栏仍是主题色。
+- **命令提示**:`argumentHint` 只写一级子命令 `show | hidden | music | chat`。Claude Code 的灰色提示只在命令名后面还没打字时显示,所以二级参数没法放在那里:`prompt.edit` 钩子算出编辑后的草稿,打了 `/clawd music ` 或 `/clawd chat ` 时,通过 `PromptHint` 的 `tail` 在输入框下面那行末尾显示 `start | stop` / `想说的话 | close | clear`,清空就消失。试过每次按键重新注册命令来换提示,没用(有参数后提示本来就不显示),已放弃。
+- **音乐命令**:`/clawd music start|stop`(也认 `on`/`off`);旧的 `startmusic`/`stopmusic` 继续当别名用,文档里不再写。
+- **排队**:同时只有一个请求;等待时又说了话,就设 `again`,等这条回完再一起回答。
+- **记忆**:模块变量 `chat`,最多 50 条,只在本次会话;改代码热重载会清空(只有开发时才会碰到)。
+- **实测**(tmux,真实调用):面板输入框拿到焦点、Haiku 约 1 秒回复、气泡和跳一下正常;`main` 模式能答出主对话里让 Claude 记住的暗号;第一轮之前正确改用 haiku;`clear`、`close` 正常;主对话里没有聊天内容。
 
 ### 为什么 Clawd 和输入线之间隔一行
 
@@ -140,6 +160,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
 - 本机 `~/.claude/skills/clawd-buddy` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
 - v1.0.0:2026-10-03 首个正式版,当时叫 clawd-spinner。
+- v1.2.0:可以和 Clawd 聊天(`/clawd chat`、聊天面板、对话气泡、`chatModel` 配置)。
 - v1.1.0:改名 **clawd-buddy**(它已经不只是替换 spinner,而是常驻的吉祥物),命令缩短为 `/clawd`;加了音乐模式的音乐条。插件和市场都改了名:`marketplace.json` 里留了 `renames: { "clawd-spinner": "clawd-buddy" }`,但市场本身也改了名,而市场是按名字识别的,1.0.0 的用户要删掉旧插件和旧市场再重装(README 里有命令)。`$.store`(隐藏状态)和 `pluginConfigs`(语言)按插件名存,改名后各重置一次。`native/Info.plist` 的 `dev.clawd-spinner.clawd-ears` 故意没改:改了就会重新编译,macOS 又要重新授权录音。本地目录已改为 `~/mods/clawd-buddy`,软链接改为 `~/.claude/skills/clawd-buddy`;Claude Code 的项目数据按路径存在 `~/.claude/projects/-Users-liangzhanbo-mods-clawd-buddy/`,旧的 `...-clawd-spinner/` 里只剩已归档会话的记录。
 
 ## 迭代历史

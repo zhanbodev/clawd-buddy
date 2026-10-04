@@ -82,3 +82,26 @@ test('/clawd hidden empties the band and show brings the mascot back', async ($,
   await ui.redraw()
   expect(await ui.find({ type: 'Client' })).toBeDefined()
 })
+
+test('/clawd chat answers in the pane and keeps the chat out of the command output', async ($, on) => {
+  await start($, on)
+  on('session.messages', () => ({ value: [{ role: 'user', text: 'fix the tests', toolUses: [] }] }))
+  on('model.complete', ($, e) => ({
+    value: { isAnswered: true, text: 'Go get them!', usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+  }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.scroll', () => ({ value: {} }))
+  const answer = await $.command.run({ command: 'clawd', args: 'chat hello Clawd' })
+  // Nothing of the chat goes into the transcript
+  expect(answer.text).toBeUndefined()
+  const pane = await $.ui.mount({
+    plugin: 'clawd-buddy',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: 'clawd-chat',
+    viewport: { columns: 100, rows: 30 },
+    props: { title: 'Clawd', isFocused: true, bodyColumns: 50, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
+  })
+  expect(await pane.find({ type: 'Markdown', text: 'hello Clawd' })).toBeDefined()
+  expect(await pane.find({ key: 'clawd-chat-input' })).toBeDefined()
+})

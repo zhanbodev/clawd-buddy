@@ -8,12 +8,13 @@
 
 <p align="center">
   Bring <b>Clawd</b>, Claude Code's pixel mascot, into your terminal.<br>
-  It lives above the prompt, acts out whatever Claude is doing, bubbles code while it types, dances to your music, and hops when you click it.
+  It lives above the prompt, acts out whatever Claude is doing, bubbles code while it types, dances to your music, hops when you click it, and chats with you.
 </p>
 
 <p align="center">
   <a href="#install">Install</a> ·
   <a href="#commands">Commands</a> ·
+  <a href="#talk-to-clawd">Talk to Clawd</a> ·
   <a href="#music-mode">Music mode</a> ·
   <a href="#settings">Settings</a> ·
   <a href="#development">Development</a>
@@ -57,7 +58,7 @@ And a few small touches:
 - **Not selectable**: dragging to select text never picks up Clawd, so it never ends up in what you copy.
 - **Plain captions**: beside it reads something like "Editing… · register.js". Only the file's name is shown, never anything else from a tool's input.
 - **English and Chinese**: follows your system language, or pick one yourself.
-- **Free**: calls no model and uses no network.
+- **Free to watch**: everything but the chat calls no model and uses no network. Chatting calls a model with your own Claude account, only when you send a message.
 
 ## Install
 
@@ -133,20 +134,34 @@ Type them in Claude Code. They work while Claude is answering, too.
 | :-- | :-- |
 | `/clawd show` | Brings Clawd back |
 | `/clawd hidden` | Hides Clawd. It stays hidden in later sessions too |
-| `/clawd startmusic` | Turns music mode on |
-| `/clawd stopmusic` | Turns music mode off |
+| `/clawd music start` | Turns music mode on |
+| `/clawd music stop` | Turns music mode off |
+| `/clawd chat` | Opens the chat with Clawd, ready to type |
+| `/clawd chat <message>` | Says something to Clawd |
+| `/clawd chat close` / `clear` | Closes the chat / clears it |
+
+## Talk to Clawd
+
+Clawd doesn't only watch: you can chat with it.
+
+- Run `/clawd chat`, or `/clawd chat hi Clawd!` to say something right away. A **chat pane** opens beside the transcript, or above the prompt in a narrow terminal, with the whole chat so far and a box to keep typing in. Press Esc to go back to the prompt; the pane stays, so you can keep reading.
+- When Clawd answers, it hops, and a **speech bubble** with its reply pops up beside it for a few seconds. The full reply is in the pane.
+- Clawd knows what's going on: what Claude is doing right now and the latest of your conversation. It can't run tools or change files, so for real work it sends you back to Claude.
+- The chat **stays out of Claude's conversation**: nothing you say to Clawd reaches Claude, and the chat is forgotten when the session ends.
+- Choose who answers under **Chat model / 聊天模型** in `/config`, below.
+- The pane takes its background from Claude Code's theme, while the main transcript shows your terminal's own background. To have the pane match your terminal exactly, pick an ANSI theme with `/theme`: **Dark mode (ANSI colors only)** for a dark terminal (`"theme": "dark-ansi"`), or its light counterpart for a light one. With `light` in a dark terminal the pane comes out white; `dark` gives a dark gray close to most dark terminals.
 
 ## Music mode
 
 **Turn it on**
 
-1. Play some music, then run `/clawd startmusic`. The first time, it takes a few seconds to build the small program that listens.
+1. Play some music, then run `/clawd music start`. The first time, it takes a few seconds to build the small program that listens.
 2. macOS asks whether **clawd-ears may record system audio**. Click Allow.
 3. Clawd puts its headphones on and starts dancing to the beat.
 
 **No prompt, or you clicked Don't Allow?**
 
-Open **System Settings → Privacy & Security → Screen & System Audio Recording**, find **clawd-ears** in the "System Audio Recording Only" list below, and switch it on. Then run `/clawd stopmusic` and `/clawd startmusic`.
+Open **System Settings → Privacy & Security → Screen & System Audio Recording**, find **clawd-ears** in the "System Audio Recording Only" list below, and switch it on. Then run `/clawd music stop` and `/clawd music start`.
 
 **What it hears**
 
@@ -163,6 +178,14 @@ In `/config`, find **Language / 语言**:
 | `auto` (default) | Follows your system language: Chinese when the first of `LC_ALL`, `LC_MESSAGES` and `LANG` that's set starts with `zh`, English otherwise |
 | `zh` | Chinese |
 | `en` | English |
+
+And **Chat model / 聊天模型**, for who answers when you chat with Clawd:
+
+| Value | Effect |
+| :-- | :-- |
+| `haiku` (default) | Fast and light. Gets what Claude is doing and a short digest of your latest messages |
+| `sonnet`, `opus` | The same digest, answered by a bigger model |
+| `main` | Forks the session's own conversation, on the session's own model: Clawd knows everything said so far. Costs more, and takes longer. Before the session's first answer, haiku stands in |
 
 ## How it's drawn
 
