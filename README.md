@@ -3,7 +3,7 @@
 <p align="center"><b>English</b> | <a href="README.zh-CN.md">中文</a></p>
 
 <p align="center">
-  <img src="docs/images/poke.gif" width="480" alt="Clawd above the prompt, clicked: it hops with its arms up, winks and looks around">
+  <img src="docs/images/hero.svg" width="800" alt="Clawd in a pixel San Francisco by the bay, from morning to night: fishing, coding at a café table, watering a planter, dozing on a bench">
 </p>
 
 <p align="center">
@@ -70,6 +70,11 @@ Every release is on the [releases page](https://github.com/zhanbodev/clawd-buddy
     </td>
   </tr>
 </table>
+
+<p align="center">
+  <img src="docs/images/poke.gif" width="420" alt="Clawd above the prompt in the terminal, clicked: it hops with its arms up, winks and looks around"><br>
+  <sub>In the terminal: click it and it hops</sub>
+</p>
 
 And a few small touches:
 

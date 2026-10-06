@@ -3,7 +3,7 @@
 <p align="center"><a href="README.md">English</a> | <b>中文</b></p>
 
 <p align="center">
-  <img src="docs/images/poke.gif" width="480" alt="Clawd 站在输入框上方,被点了一下:举手跳起、眨眼、东张西望">
+  <img src="docs/images/hero.svg" width="800" alt="Clawd 在像素版旧金山海湾小城里,从早到晚:钓鱼、在咖啡桌前敲电脑、浇花、在长椅上打盹">
 </p>
 
 <p align="center">
@@ -70,6 +70,11 @@
     </td>
   </tr>
 </table>
+
+<p align="center">
+  <img src="docs/images/poke.gif" width="420" alt="终端里的 Clawd 站在输入框上方,被点了一下:举手跳起、眨眼、东张西望"><br>
+  <sub>在终端里:点它一下就会跳起来</sub>
+</p>
 
 还有这些小细节:
 
