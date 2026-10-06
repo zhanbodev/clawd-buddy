@@ -7,8 +7,8 @@
 </p>
 
 <p align="center">
-  Bring <b>Clawd</b>, Claude Code's pixel mascot, into your terminal.<br>
-  It lives above the prompt, acts out whatever Claude is doing, bubbles code while it types, dances to your music, hops when you click it, and chats with you.
+  Bring <b>Clawd</b>, Claude Code's pixel mascot, into your terminal and the Claude desktop app.<br>
+  It lives above the prompt, acts out whatever Claude is doing, bubbles code while it types, dances to your music, hops when you click it, chats with you, and plays a game with you.
 </p>
 
 <p align="center">
@@ -16,6 +16,8 @@
   <a href="#install">Install</a> ·
   <a href="#commands">Commands</a> ·
   <a href="#talk-to-clawd">Talk to Clawd</a> ·
+  <a href="#desktop-app">Desktop app</a> ·
+  <a href="#game-mode">Game mode</a> ·
   <a href="#music-mode">Music mode</a> ·
   <a href="#settings">Settings</a> ·
   <a href="#development">Development</a>
@@ -25,18 +27,16 @@
 
 ## What's new
 
-**1.3.1**
+**1.4.0**
 
-- **Clawd knows the whole session with any chat model**: `haiku`, `sonnet` and `opus` now get a copy of your conversation with Claude so far (the newest 40,000 characters or so), not just the last few messages. So you can run the session on Opus and chat with Clawd on Sonnet, and it still knows everything Claude did. See [Pick the chat model](#pick-the-chat-model).
-
-**1.3.0**
-
-- **Switch the chat model and effort from the prompt**: `/clawd model sonnet` and `/clawd effort high`. Both are saved to `/config`, and switching keeps the chat so far.
-- **Small terminals**: the chat pane above the prompt is held to a height that leaves Clawd its spot. In a terminal too small for both, Clawd steps aside so the chat and your code keep the room.
-- **Tidier speech bubbles**: English wraps at spaces instead of mid-word.
+- **The Claude desktop app**: Clawd now lives in the Code tab of the desktop app too, in a little pixel city by the bay, after San Francisco. The scene follows your local time (morning, noon, dusk, night), and while Claude has nothing on, Clawd fishes off the waterfront, codes at a café table, waters a planter, or dozes on a bench at night. See [Desktop app](#desktop-app).
+- **Game mode**: `/clawd game` turns the band above the prompt into a runner game, like the browser's offline dinosaur: press space in the empty prompt and Clawd jumps over cacti and bugs, faster every 100 points. See [Game mode](#game-mode).
+- **A chat pane for the desktop app**: your messages on the right, Clawd's replies rendered as markdown, the box at the bottom.
 
 Earlier releases:
 
+- **1.3.1**: every chat model gets a copy of the whole session so far.
+- **1.3.0**: `/clawd model` and `/clawd effort` switch the chat model from the prompt; small terminals leave Clawd its spot.
 - **1.2.0**: chat with Clawd (`/clawd chat`, a chat pane and speech bubbles), `/clawd music start|stop`, and Clawd keeps working while it chats or listens.
 - **1.1.0**: renamed from Clawd Spinner, the `/clawd` command, and equalizer bars in music mode.
 
@@ -85,7 +85,7 @@ And a few small touches:
 You need:
 
 - **Claude Code 2.1.287 or later**, the first version that supports mods.
-- **The terminal**. The Desktop app keeps its own spinner and shows no Clawd.
+- **The terminal**, or the **Code tab of the Claude desktop app**. A few things are terminal only; see [Desktop app](#desktop-app).
 - For **music mode** only: macOS 14.2 or later, and the Xcode command line tools (`xcode-select --install`).
 
 ### From the plugin marketplace
@@ -156,6 +156,11 @@ Type them in Claude Code. They work while Claude is answering, too.
 | `/clawd hidden` | Hides Clawd. It stays hidden in later sessions too |
 | `/clawd music start` | Turns music mode on |
 | `/clawd music stop` | Turns music mode off |
+| `/clawd game` / `game stop` | Starts / ends [game mode](#game-mode) |
+| `/clawd scene next` | Desktop app: shows the next time of day (morning, noon, dusk, night, then your local time again) |
+| `/clawd scene morning\|noon\|dusk\|night` / `auto` | Desktop app: pins a time of day / follows your local time again |
+| `/clawd scene off` / `on` | Desktop app: plain Clawd without the scene / the scene back |
+| `/clawd idle fishing\|laptop\|garden\|sleep` / `auto` | Desktop app: pins what Clawd does while it waits / picks by the time of day again |
 | `/clawd chat` | Opens the chat with Clawd, ready to type |
 | `/clawd chat <message>` | Says something to Clawd |
 | `/clawd chat close` / `clear` | Closes the chat / clears it |
@@ -192,6 +197,32 @@ Clawd's chat has a model of its own, separate from the session's: run the sessio
   ```
 
 `/clawd effort` and **Chat effort / 聊天思考强度** set how hard it thinks the same way. What each model knows and costs is under [Settings](#settings).
+
+## Desktop app
+
+In the Code tab of the Claude desktop app, the card above the prompt becomes a small pixel city by the bay, after San Francisco: the Golden Gate, golden hills, a pyramid tower and a round-topped one, painted Victorian houses, palms and the waterfront.
+
+<p align="center">
+  <img src="docs/images/scene-morning.svg" width="700" alt="Morning: fog drifting through the Golden Gate, Clawd fishing off the waterfront"><br>
+  <img src="docs/images/scene-noon.svg" width="700" alt="Noon: blue sky, Clawd coding on a laptop at a café table"><br>
+  <img src="docs/images/scene-dusk.svg" width="700" alt="Dusk: a pink sky, the street lamp on, Clawd watering a planter"><br>
+  <img src="docs/images/scene-night.svg" width="700" alt="Night: lit windows, the tower's crown changing color, Clawd dozing on a bench">
+</p>
+
+- **It follows your local time**: morning from 5:00, noon from 10:00, dusk from 16:30, night from 19:30. Fog drifts through the Gate in the morning; at night the windows light up, the bridge's cable twinkles and the round tower's crown cycles through colors.
+- **While Claude has nothing on**, Clawd keeps itself busy, a new pastime every few minutes: fishing off the waterfront (every so often a fish bites, comes up the line and lands in its bucket), coding at a café table with a coffee, watering a planter, or at night dozing on a bench under the lamp.
+- **While Claude works**, Clawd acts it out in the scene as it does in the terminal, its caption and speech bubbles drawn there too.
+- **Try it**: `/clawd scene next` steps through the times of day, `/clawd idle fishing` pins a pastime. `/clawd scene off` brings back plain Clawd.
+- **Terminal only, for now**: clicking Clawd (the desktop app loads no `Client` module, so nothing in the card takes a click) and the hint for a command's arguments under the prompt.
+
+## Game mode
+
+`/clawd game` turns the band above the prompt into a runner game, like the browser's offline dinosaur. `/clawd game stop` ends it.
+
+- **Jump**: with the prompt empty, press space (the space doesn't land in the prompt; with text in it, space types as usual). In the terminal a click on the track jumps too, and after that click space, up or w; Escape gives the keyboard back to the prompt. In the desktop app, press **Start**, which then turns into **Jump ↵**: press Enter to jump. Clicking anywhere on the card puts the focus back on it.
+- **Faster and harder**: every 100 points the run speeds up and the score flashes, up to a top speed; taller cacti and pairs of them show up as it goes.
+- **Your best score** is kept across sessions.
+- While you play, the captions and speech bubbles stay out of the way (the chat pane still works), and music mode waits: if it was on, Clawd goes back to dancing when the game ends.
 
 ## Music mode
 
@@ -235,6 +266,7 @@ And **Chat effort / 聊天思考强度**, set with `/clawd effort`: `default` (l
 
 - Clawd is drawn with quadrant block characters (`▘ ▝ ▀ ▖ ▌ ▞ ▛ ▗ ▚ ▐ ▜ ▄ ▙ ▟ █`), four pixels to a character cell, the way Claude Code draws its own logo. Its shape is copied pixel for pixel from that logo.
 - It's drawn in the mod band above the prompt, inside a `Client` region. A press on the region goes to Clawd, so it can answer clicks and can't be selected.
+- In the desktop app the same pixels are drawn as an SVG, each pixel twice as tall as wide like a terminal cell's halves. The scene's motion is the SVG's own animation (SMIL), each loop started from the clock, so a new drawing picks up where the last one left off.
 - A frame lasts 150 ms. Clawd redraws every frame only while it works, celebrates, dances or reacts to a click. While it waits, it redraws only when it blinks or glances.
 
 ## Development
@@ -251,7 +283,9 @@ clawd-buddy/
 ├── hooks/
 │   ├── hooks.json               Points to register.js
 │   ├── register.js              Every animation and all the logic
-│   └── clawd-view.js            The Client module that shows Clawd and takes clicks
+│   ├── clawd-view.js            The Client module that shows Clawd and takes clicks
+│   ├── clawd-game.js            Game mode: its rules, the terminal's Client, the desktop's SVG
+│   └── clawd-scene.js           The desktop app's city scenes and Clawd's pastimes
 ├── native/
 │   ├── clawd-ears.swift         The program music mode listens with
 │   └── Info.plist               The reason it gives when it asks to record system audio

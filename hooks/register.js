@@ -1,3 +1,5 @@
+import { sceneSvg, periodAt, pickActivity, PERIODS, ACTIVITIES } from './clawd-scene.js'
+import { newGame, step as gameStep, press as gamePress, start as gameStart, pause as gamePause, frameMs as gameFrameMs, gameSvg } from './clawd-game.js'
 // Tuning knobs
 // Time between animation frames. Redraws are throttled, so don't go much below 100.
 const FRAME_MS = 150
@@ -87,6 +89,8 @@ const CHAT_EFFORTS = ['default', 'low', 'medium', 'high', 'xhigh', 'max']
 const PROMPT_ROWS = 5
 const PANE_BORDER_ROWS = 2
 const BAND_ROWS = SH / 2
+// The game's track: 16 pixels tall
+const GAME_ROWS = 8
 // The speech bubble beside the mascot: its widest, in terminal columns, and how long it stays
 const BUBBLE_WIDTH = 36
 const BUBBLE_MIN_MS = 6000
@@ -101,7 +105,30 @@ const WORDS = {
     poses: { think: '思考中', read: '阅读中', edit: '编辑中', bash: '运行中', search: '搜索中' },
     cheers: ['任务完成!', '搞定啦!', '干得漂亮!', '太棒了!'],
     command: '显示或隐藏 Clawd、开关音乐模式,或和 Clawd 聊天',
-    usage: '用法:/clawd show | hidden | music [start | stop] | chat [想说的话 | close | clear] | model [模型] | effort [强度]',
+    usage: '用法:/clawd show | hidden | music [start | stop] | game [start | stop] | scene [next | auto | morning | noon | dusk | night | on | off] | idle [auto | fishing | laptop | garden | sleep] | chat [想说的话 | close | clear] | model [模型] | effort [强度]',
+    gameOn: '游戏开始!输入框空着时按空格,Clawd 就会跳(终端里也可以点跑道;桌面端点「开始」后按回车跳)。/clawd game stop 或点 ✕ 退出。',
+    gameNoMusic: '游戏中不能开音乐模式,退出游戏后再试。',
+    sceneSet: (period, on) =>
+      on
+        ? '场景:' + (period === 'auto' ? '跟随本地时间' : { morning: '早上', noon: '中午', dusk: '黄昏', night: '夜晚' }[period]) + '。/clawd scene next 换下一个时段。场景只在桌面端显示。'
+        : '场景关了,桌面端回到只有 Clawd 的样子。/clawd scene on 重新打开。',
+    idleSet: (a) => (a === 'auto' ? '待机动作:按时间随机。' : '待机动作固定为:' + { fishing: '钓鱼', laptop: '玩电脑', garden: '浇花', sleep: '睡觉' }[a] + '。/clawd idle auto 恢复随机。'),
+    gameOff: '不玩了,Clawd 回到原位。',
+    gameNotOn: '游戏没有开着。',
+    gameStart: '开始',
+    gameJump: '跳跃 ↵',
+    gamePause: '暂停',
+    gameResume: '继续',
+    close: '关闭',
+    gameWords: {
+      start: '在输入框按空格开始,空格跳跃',
+      over: 'GAME OVER · 按空格重来',
+      paused: '已暂停',
+      faster: '加速!',
+      hi: '最高',
+      esc: '键盘在游戏这里,按 Esc 回到输入框',
+    },
+    gameWordsDesk: { start: '点「开始」,之后按回车跳跃', over: 'GAME OVER · 点「开始」重来' },
     shown: 'Clawd 出来啦。',
     hidden: 'Clawd 已隐藏,输入 /clawd show 让它回来。',
     hiddenMusic: 'Clawd 已隐藏,音乐模式也一起关了。输入 /clawd show 让它回来。',
@@ -119,6 +146,7 @@ const WORDS = {
     musicStopped: 'Clawd 的音乐模式停了:',
     chatYou: '你',
     chatPlaceholder: '跟 Clawd 说点什么…(Esc 回到主输入框)',
+    chatPlaceholderShort: '跟 Clawd 说点什么…',
     chatSend: '发送',
     chatThinking: 'Clawd 正在想…',
     chatHello: '跟 Clawd 打个招呼吧。它看得到 Claude 在做什么,但不会动你的文件。聊天内容不会进入 Claude 的对话。',
@@ -139,7 +167,30 @@ const WORDS = {
     poses: { think: 'Thinking', read: 'Reading', edit: 'Editing', bash: 'Running', search: 'Searching' },
     cheers: ['All done!', 'Nailed it!', 'Great job!', 'Awesome!'],
     command: 'Show or hide Clawd, turn music mode on or off, or chat with Clawd',
-    usage: 'Usage: /clawd show | hidden | music [start | stop] | chat [message | close | clear] | model [name] | effort [level]',
+    usage: 'Usage: /clawd show | hidden | music [start | stop] | game [start | stop] | scene [next | auto | morning | noon | dusk | night | on | off] | idle [auto | fishing | laptop | garden | sleep] | chat [message | close | clear] | model [name] | effort [level]',
+    gameOn: 'Game on! With the prompt empty, space makes Clawd jump (in the terminal a click on the track does too; in the desktop app, press Start, then Enter jumps). /clawd game stop or the ✕ ends it.',
+    gameNoMusic: 'Music mode is off limits during the game: try again once it is over.',
+    sceneSet: (period, on) =>
+      on
+        ? 'Scene: ' + (period === 'auto' ? 'following the local time' : period) + '. /clawd scene next moves on to the next time of day. Scenes show in the desktop app.'
+        : 'Scene off: the desktop card is back to Clawd alone. /clawd scene on brings it back.',
+    idleSet: (a) => (a === 'auto' ? 'Pastimes: picked by the time of day.' : 'Pastime fixed to ' + a + '. /clawd idle auto picks again.'),
+    gameOff: 'Game over for now, Clawd is back in its spot.',
+    gameNotOn: 'The game is not on.',
+    gameStart: 'Start',
+    gameJump: 'Jump ↵',
+    gamePause: 'Pause',
+    gameResume: 'Resume',
+    close: 'Close',
+    gameWords: {
+      start: 'Press space in the prompt to start, space to jump',
+      over: 'GAME OVER · space to retry',
+      paused: 'Paused',
+      faster: 'Faster!',
+      hi: 'HI',
+      esc: 'The game has the keyboard: Escape goes back to the prompt',
+    },
+    gameWordsDesk: { start: 'Press Start, then Enter jumps', over: 'GAME OVER · Start to retry' },
     shown: 'Clawd is back.',
     hidden: 'Clawd is hidden. Run /clawd show to bring it back.',
     hiddenMusic: 'Clawd is hidden, and music mode is off too. Run /clawd show to bring it back.',
@@ -157,6 +208,7 @@ const WORDS = {
     musicStopped: "Clawd's music mode stopped: ",
     chatYou: 'You',
     chatPlaceholder: 'Say something to Clawd… (Esc goes back to the prompt)',
+    chatPlaceholderShort: 'Say something to Clawd…',
     chatSend: 'send',
     chatThinking: 'Clawd is thinking…',
     chatHello: "Say hi to Clawd. It can see what Claude is doing, but it never touches your files. The chat stays out of Claude's conversation.",
@@ -563,6 +615,36 @@ function gridRows(Box, Text, grid) {
   return runRows(Box, Text, gridRuns(grid))
 }
 
+// CSS pixels per mascot pixel where the desktop app draws it as an SVG. The drawings are made for
+// a terminal's cells, each twice as tall as wide and split into 2 by 2 pixels, so a pixel is
+// twice as tall as wide here too, or the mascot comes out squashed
+const DESKTOP_PIXEL_W = 2.5
+const DESKTOP_PIXEL_H = 5
+
+// A pixel grid as an SVG document, each pixel sw by sh, each row's runs of one color merged into
+// one rect; the written characters (code in the bubbles, notes) drawn as text over their 2 by 2
+// pixel cells
+function gridSvg(grid, sw, sh) {
+  const w = grid[0].length
+  const h = grid.length
+  const rects = []
+  for (let y = 0; y < h; y++) {
+    let x = 0
+    while (x < w) {
+      const c = grid[y][x]
+      let end = x + 1
+      while (end < w && grid[y][end] === c) end++
+      if (c !== null) rects.push('<rect x="' + x * sw + '" y="' + y * sh + '" width="' + (end - x) * sw + '" height="' + sh + '" fill="' + colorOf(c) + '"/>')
+      x = end
+    }
+  }
+  for (const [col, row, text, color] of grid.words || []) {
+    const esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    rects.push('<text x="' + col * 2 * sw + '" y="' + (row * 2 + 1.6) * sh + '" font-family="monospace" font-size="' + 1.8 * sh + '" fill="' + (typeof color === 'number' ? colorOf(color) : color) + '">' + esc + '</text>')
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w * sw + '" height="' + h * sh + '" viewBox="0 0 ' + w * sw + ' ' + h * sh + '" shape-rendering="crispEdges">' + rects.join('') + '</svg>'
+}
+
 // A pixel grid as plain data: its width in cells, and each terminal row's runs of cells as
 // { text, color, backgroundColor }, the colors as 'rgb(...)' strings, or null where the cells
 // are empty. What the Client that shows the mascot draws from.
@@ -963,12 +1045,74 @@ function bubbleLines(text, width, lines) {
 // the hint line under the prompt, since the typeahead's own hint shows only the subcommands,
 // and only until anything is typed after /clawd
 let subHint = ''
+// Game mode: while on, the band holds the runner game in place of the mascot. The best score
+// is kept across sessions.
+// The desktop's scene: on or off, the time of day it shows ('auto' for the local time) and the
+// pastime while idle ('auto' to pick by the time of day). The local time is the clock plus the
+// zone's offset, read from the system.
+const scene_ = { on: true, period: 'auto', idle: 'auto', offsetMin: null, activity: null, until: 0, seed: 1 }
+// What the scene showed last (time of day, pastime), to know when the clock changes it
+let sceneKey = ''
+let game = false
+let gameHi = 0
+// On the desktop the game runs here, its frames drawn as an Svg: the state, and the track's
+// width in cells
+let deskGame = null
+let deskColumns = 120
+// Spaces typed into the empty prompt during the game, each a jump
+let gameJumps = 0
+// The band's render instance, to keep its focus on the desktop's game button
+let bandRequestId = ''
 function subHintFor(draft) {
   if (/^\/clawd\s+music\s/.test(draft)) return '/clawd music: start | stop'
+  if (/^\/clawd\s+game\s/.test(draft)) return '/clawd game: start | stop'
+  if (/^\/clawd\s+scene\s/.test(draft)) return '/clawd scene: next | auto | ' + PERIODS.join(' | ') + ' | on | off'
+  if (/^\/clawd\s+idle\s/.test(draft)) return '/clawd idle: auto | ' + ACTIVITIES.join(' | ')
   if (/^\/clawd\s+chat\s/.test(draft)) return '/clawd chat: ' + WORDS_NOW.chatHint
   if (/^\/clawd\s+model\s/.test(draft)) return '/clawd model: ' + CHAT_MODELS.join(' | ')
   if (/^\/clawd\s+effort\s/.test(draft)) return '/clawd effort: ' + CHAT_EFFORTS.join(' | ')
   return ''
+}
+
+// The local zone's offset from UTC, from the system (+0800); the JS clock's own zone as a
+// fallback. Read again now and then, for a change to summer time.
+async function readZone($) {
+  try {
+    const r = await $.process.run(['/bin/date', '+%z'])
+    const m = /^([+-])(\d\d)(\d\d)/.exec(String(r.stdout || '').trim())
+    if (m) scene_.offsetMin = (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3]))
+  } catch {}
+  if (scene_.offsetMin === null) scene_.offsetMin = -new Date().getTimezoneOffset()
+}
+
+function localTime(nowMs) {
+  const minutes = (((Math.floor(nowMs / 60000) + (scene_.offsetMin || 0)) % 1440) + 1440) % 1440
+  return { hour: Math.floor(minutes / 60), minute: minutes % 60 }
+}
+
+function currentPeriod(nowMs) {
+  if (scene_.period !== 'auto') return scene_.period
+  const { hour, minute } = localTime(nowMs)
+  return periodAt(hour, minute)
+}
+
+// The pastime now: pinned, or picked for the time of day and kept a few minutes
+function idleActivity(nowMs, period) {
+  if (scene_.idle !== 'auto') return scene_.idle
+  if (!scene_.activity || nowMs >= scene_.until || !pickable(scene_.activity, period)) {
+    scene_.seed += 1
+    scene_.activity = pickActivity(period, scene_.seed + Math.floor(nowMs / 1000), localTime(nowMs).hour)
+    scene_.until = nowMs + 4 * 60 * 1000
+  }
+  return scene_.activity
+}
+
+function pickable(activity, period) {
+  return activity !== 'sleep' || period === 'night'
+}
+
+function saveScene($) {
+  return $.store.set('scene', { on: scene_.on, period: scene_.period, idle: scene_.idle })
 }
 
 export function register(on, options) {
@@ -988,14 +1132,54 @@ export function register(on, options) {
     chat.model = CHAT_MODELS.includes(options && options.chatModel) ? options.chatModel : 'haiku'
     chat.effort = CHAT_EFFORTS.includes(options && options.chatEffort) ? options.chatEffort : 'default'
     hidden = (await $.store.get('hidden')) === true
+    gameHi = Number(await $.store.get('gameHi')) || 0
+    const savedScene = await $.store.get('scene')
+    if (savedScene && typeof savedScene === 'object') {
+      if (typeof savedScene.on === 'boolean') scene_.on = savedScene.on
+      if (savedScene.period === 'auto' || PERIODS.includes(savedScene.period)) scene_.period = savedScene.period
+      if (savedScene.idle === 'auto' || ACTIVITIES.includes(savedScene.idle)) scene_.idle = savedScene.idle
+    }
+    void readZone($)
     // The chat so far this session, should the module have just reloaded
     const kept = await $.state.get({ plugin: 'clawd-buddy', key: 'chat' }).catch(() => undefined)
     if (kept && kept.value && Array.isArray(kept.value.history)) chat.history = kept.value.history
     await $.command.register({
       name: 'clawd',
       description: words.command,
-      argumentHint: 'show | hidden | music | chat | model | effort',
+      argumentHint: 'show | hidden | music | game | scene | idle | chat | model | effort',
       immediate: true,
+    })
+    // The desktop's game, in real time: as many frames as the time gone by holds. Each drawing
+    // carries the run on by its own animation for seconds (the obstacles to come, the score
+    // counting up, the landing), so a new one goes out only when the run changes course: a
+    // press (drawn where it's handled), a crash, a speed-up, and every few seconds to stay in
+    // step. Fewer drawings keep the card, and the focus on its button, still.
+    let deskLast = 0
+    let deskDrawn = 0
+    let deskBacklog = 0
+    $.clock.every(20, async () => {
+      if (!game || !deskGame) {
+        deskLast = 0
+        return
+      }
+      const now = await $.clock.now()
+      deskBacklog = Math.min(500, deskBacklog + (deskLast ? now - deskLast : 0))
+      deskLast = now
+      let changed = false
+      while (deskGame && deskBacklog >= gameFrameMs(deskGame)) {
+        const mode = deskGame.mode
+        deskBacklog -= gameFrameMs(deskGame)
+        const news = gameStep(deskGame, deskColumns * 2)
+        if ((news && (news.crash || news.level)) || deskGame.mode !== mode) changed = true
+        if (news && news.hi > gameHi) {
+          gameHi = news.hi
+          void $.store.set('gameHi', gameHi)
+        }
+      }
+      if (changed || (deskGame.mode === 'run' && now - deskDrawn >= 4000)) {
+        deskDrawn = now
+        $.ui.invalidate('ui.render')
+      }
     })
     $.clock.every(FRAME_MS, async () => {
       if (hidden) return
@@ -1038,6 +1222,14 @@ export function register(on, options) {
           $.ui.invalidate('ui.render')
         }
       }
+      // The scene moves on with the clock: a new time of day, a new pastime, now and then the
+      // zone read again
+      if (scene_.on && step % 200 === 0) {
+        const now = await $.clock.now()
+        if (step % 24000 === 0) await readZone($)
+        const period = currentPeriod(now)
+        if (period !== sceneKey.split('/')[0] || (scene_.idle === 'auto' && now >= scene_.until)) $.ui.invalidate('ui.render')
+      }
     })
     return next(e)
   })
@@ -1045,6 +1237,15 @@ export function register(on, options) {
   // A click on the mascot, from hooks/clawd-view.js: it hops and looks around, unless it's
   // busy working or partying
   on('ui.message', async ($, e, next) => {
+    // A new best score from the game
+    if (e.element === 'clawd-game') {
+      const hi = Number(e.data && e.data.hi) || 0
+      if (hi > gameHi) {
+        gameHi = hi
+        await $.store.set('gameHi', hi)
+      }
+      return {}
+    }
     if (e.element !== 'clawd') return next(e)
     if (e.data && e.data.poke && !isWorking && !celebration) {
       poke = 0
@@ -1100,6 +1301,14 @@ export function register(on, options) {
 
   // As /clawd music or /clawd chat is typed, what comes next shows under the prompt
   on('prompt.edit', async ($, e, next) => {
+    // In game mode a space typed into an empty prompt is a jump, and stays out of the prompt:
+    // the desktop's game is pressed here, the terminal's hears of it through its props
+    if (game && !hidden && e.inputText === ' ' && e.text === '') {
+      gameJumps += 1
+      if (deskGame) deskGame = gamePress(deskGame)
+      $.ui.invalidate('ui.render')
+      return next({ ...e, inputText: '' })
+    }
     const result = await next(e)
     const wanted = subHintFor(e.text.slice(0, e.start) + e.inputText + e.text.slice(e.end))
     if (wanted !== subHint) {
@@ -1168,10 +1377,47 @@ export function register(on, options) {
     } else if (arg === 'hidden' || arg === 'hide') {
       text = music ? words.hiddenMusic : words.hidden
       stopMusic()
+      game = false
+      deskGame = null
       hidden = true
       await $.store.set('hidden', true)
+    } else if (arg === 'game' || arg === 'game start' || arg === 'game on') {
+      game = true
+      text = words.gameOn
+      if (hidden) {
+        hidden = false
+        await $.store.set('hidden', false)
+      }
+      deskGame = newGame(gameHi)
+    } else if (arg === 'scene' || arg.startsWith('scene ')) {
+      const want = arg.slice(5).trim()
+      if (want === 'off') scene_.on = false
+      else {
+        scene_.on = true
+        if (want === 'auto' || PERIODS.includes(want)) scene_.period = want
+        // next: morning, noon, dusk, night, then back to the local time
+        else if (want === 'next') {
+          const i = PERIODS.indexOf(scene_.period)
+          scene_.period = i === PERIODS.length - 1 ? 'auto' : PERIODS[i + 1]
+        }
+      }
+      await saveScene($)
+      text = words.sceneSet(scene_.period, scene_.on)
+    } else if (arg === 'idle' || arg.startsWith('idle ')) {
+      const want = arg.slice(4).trim() || 'auto'
+      if (want === 'auto' || ACTIVITIES.includes(want)) {
+        scene_.idle = want
+        scene_.activity = null
+        await saveScene($)
+        text = words.idleSet(want)
+      }
+    } else if (arg === 'game stop' || arg === 'game off') {
+      text = game ? words.gameOff : words.gameNotOn
+      game = false
+      deskGame = null
     } else if (musicOn) {
-      if (hidden) text = words.musicHidden
+      if (game) text = words.gameNoMusic
+      else if (hidden) text = words.musicHidden
       else if (music) text = words.musicAlready
       else {
         try {
@@ -1211,6 +1457,63 @@ export function register(on, options) {
   // pane keeps all its rows for the chat; the mascot stays in the band.
   on('ui.render', { component: 'Pane' }, async ($, e, next) => {
     if (e.requestId !== CHAT_PANE) return next(e)
+    if (e.surface === 'desktop') {
+      // The desktop app draws the chat the way it draws its own: your messages in a grey block
+      // on the right, Clawd's replies as plain markdown, from the top down
+      const { Box, Text, Input, Markdown } = $.ui.resolve(e)
+      const rows = []
+      if (chat.history.length === 0 && !chat.pending) rows.push(Text({ children: [words.chatHello], color: 'inactive', wrap: 'wrap' }))
+      for (const m of chat.history) {
+        if (m.role === 'note') rows.push(Text({ children: [m.text], color: 'inactive', wrap: 'wrap' }))
+        else if (m.role === 'user')
+          rows.push(
+            Box({
+              alignSelf: 'flex-end',
+              flexShrink: 1,
+              marginLeft: 8,
+              paddingX: 1,
+              backgroundColor: 'userMessageBackground',
+              children: [Text({ children: [m.text], color: 'text', wrap: 'wrap' })],
+            }),
+          )
+        else rows.push(Markdown({ text: m.text }))
+      }
+      if (chat.pending) rows.push(Text({ children: [words.chatThinking], color: 'claude' }))
+      const bodyRows = e.props.scroll && typeof e.props.scroll.bodyRows === 'number' ? e.props.scroll.bodyRows : 0
+      // The box, like the app's own prompt: a rounded frame that lights up while the pane has the
+      // keyboard and brightens under the pointer
+      const box = Box({
+        key: 'clawd-chat-box',
+        flexDirection: 'column',
+        width: '100%',
+        flexShrink: 0,
+        borderStyle: 'round',
+        borderColor: e.props.isFocused ? 'claude' : 'inactive',
+        hover: { borderColor: e.props.isFocused ? 'claude' : 'text' },
+        paddingX: 1,
+        paddingY: 0,
+        children: [
+          Input({
+            key: 'clawd-chat-input',
+            placeholder: words.chatPlaceholderShort,
+            value: '',
+            submitLabel: words.chatSend,
+            autoFocus: true,
+            onSubmit: (value) => {
+              const message = String(value || '').trim()
+              if (message) void say($, message)
+            },
+          }),
+        ],
+      })
+      // The chat from the top down, the box held at the bottom of the pane
+      return Box({
+        flexDirection: 'column',
+        rowGap: 1,
+        ...(bodyRows > 0 ? { minHeight: bodyRows } : {}),
+        children: [Box({ flexDirection: 'column', flexGrow: 1, rowGap: 1, children: rows }), box],
+      })
+    }
     const { Box, Text, Input } = $.ui.resolve(e)
     const rows = []
     if (chat.history.length === 0 && !chat.pending) rows.push(Text({ children: [words.chatHello], color: 'inactive' }))
@@ -1247,13 +1550,189 @@ export function register(on, options) {
     return Box({ flexDirection: 'column', rowGap: 1, children: rows })
   })
 
+  // A ✕ at the top right of the desktop's card: a bare glyph, dim until the pointer is on it
+  function closeMark(Box, Button, onPress) {
+    return Box({
+      key: 'clawd-close-mark',
+      alignSelf: 'flex-start',
+      flexShrink: 0,
+      children: [Button({ key: 'clawd-close', label: '✕', plain: true, dimColor: true, hover: { color: 'text', dimColor: false }, onPress })],
+    })
+  }
+
   // The mascot at the right end of the band above the prompt, always there: acting out what
   // Claude is doing while it works, partying when a task is done, and waiting otherwise.
   // Claude Code's own spinner line stays as it is, for the elapsed time and interrupt hint.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     // The block characters are drawn for the terminal, and a survey gets the band to itself
     if (e.viewport && typeof e.viewport.rows === 'number') viewRows = e.viewport.rows
-    if (hidden || e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
+    if (hidden || e.props.hasSurvey) return next(e)
+    // The desktop app's Code tab draws the band as a card above the prompt, and draws Svg: there
+    // the mascot is a small SVG at the card's right end, its caption or speech bubble beside it
+    if (e.requestId) bandRequestId = e.requestId
+    if (e.surface === 'desktop' && game && deskGame) {
+      // The desktop app loads no Client module, so nothing drawn takes a click: the buttons do.
+      // One button starts the run and then, under the same key so the focus stays on it, jumps:
+      // Enter on it is a jump. A space typed into the empty prompt jumps too (the prompt.edit
+      // hook). A small second button pauses.
+      const { Box, Svg, Button } = $.ui.resolve(e)
+      const redraw = () => $.ui.invalidate('ui.render')
+      const main = async () => {
+        if (!deskGame) return
+        const mode = deskGame.mode
+        if (mode === 'ready' || mode === 'over') {
+          // Just after a crash a press is a jump that came too late, not a new run
+          if (mode === 'over' && deskGame.time - deskGame.overAt <= 400) return
+          deskGame = gameStart(deskGame)
+          redraw()
+          if (bandRequestId) await $.ui.focus({ requestId: bandRequestId, key: 'clawd-main' }).catch(() => {})
+          return
+        }
+        deskGame = gamePress(deskGame)
+        redraw()
+      }
+      const close = () => {
+        game = false
+        deskGame = null
+        redraw()
+      }
+      const running = deskGame.mode === 'run'
+      const paused = deskGame.mode === 'paused'
+      // The track starts at the card's left edge and takes the room the controls leave, at
+      // their widest (Pause, Jump and the ✕): about 8 CSS pixels a cell
+      const room = (typeof e.props.bodyColumns === 'number' ? e.props.bodyColumns : 95) * 8 - 170
+      deskColumns = Math.max(60, Math.floor(room / (2 * DESKTOP_PIXEL_W)))
+      const ours = Box({
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        columnGap: 2,
+        children: [
+          Svg({
+            source: gameSvg(deskGame, deskColumns, { ...words.gameWords, ...words.gameWordsDesk }, DESKTOP_PIXEL_W, DESKTOP_PIXEL_H),
+            alt: 'Clawd game',
+            width: deskColumns * 2 * DESKTOP_PIXEL_W,
+            height: 16 * DESKTOP_PIXEL_H,
+          }),
+          Box({ flexGrow: 1 }),
+          Box({
+            flexDirection: 'row',
+            columnGap: 1,
+            alignItems: 'flex-end',
+            flexShrink: 0,
+            children: [
+              ...(running || paused
+                ? [
+                    Button({
+                      key: 'clawd-pause',
+                      label: paused ? words.gameResume : words.gamePause,
+                      onPress: () => {
+                        if (deskGame) deskGame = gamePause(deskGame)
+                        redraw()
+                      },
+                    }),
+                  ]
+                : []),
+              // A click anywhere on the card gives the band the keyboard, and the focus starts
+              // here, so Enter starts or jumps straight away
+              Button({
+                key: 'clawd-main',
+                label: running || paused ? words.gameJump : words.gameStart,
+                variant: 'primary',
+                autoFocus: true,
+                onPress: main,
+              }),
+            ],
+          }),
+          closeMark(Box, Button, close),
+        ],
+      })
+      const theirs = await next(e)
+      return theirs ? Box({ flexDirection: 'column', children: [ours, theirs] }) : ours
+    }
+    if (e.surface === 'desktop' && scene_.on) {
+      // The scene: a landscape for the time of day, the mascot in it. Idle, it keeps itself busy
+      // with a pastime drawn and animated by the scene itself; otherwise it's the mascot's own
+      // drawing (working, partying, thinking, dancing), set at its spot.
+      const { Box, Svg } = $.ui.resolve(e)
+      const now = await $.clock.now()
+      if (scene_.offsetMin === null) await readZone($)
+      const period = currentPeriod(now)
+      const idleNow = !isWorking && !celebration && !chat.pending && !music && poke < 0
+      const { grid, caption } = scene()
+      const activity = idleNow ? idleActivity(now, period) : null
+      const speech = chat.pending && !isWorking ? '.'.repeat(1 + (step % 3)) : chat.bubble ? chat.bubble.text : ''
+      const bubble = speech ? bubbleLines(speech, BUBBLE_WIDTH, 3) : null
+      // The card's width, about 8 CSS pixels a cell; the drawing is sized by its own markup, which
+      // the app fits to the card, so a little over the mark fills it exactly
+      const width = Math.max(120, Math.floor(((typeof e.props.bodyColumns === 'number' ? e.props.bodyColumns : 95) * 8) / 2.5))
+      sceneKey = [period, activity].join('/')
+      // The app loads each drawing afresh, its animations from their start: each takes the clock
+      // as it is now, so they pick up where the last left off
+      const sceneT = now / 1000
+      const source = sceneSvg({
+        width,
+        period,
+        t: sceneT,
+        activity,
+        mascot: idleNow ? null : grid,
+        bubble,
+        caption: bubble ? '' : caption,
+      })
+      // The whole card, edge to edge; /clawd hidden puts it away
+      const ours = Box({ width: '100%', children: [Svg({ source, alt: 'Clawd' })] })
+      const theirs = await next(e)
+      return theirs ? Box({ flexDirection: 'column', children: [ours, theirs] }) : ours
+    }
+    if (e.surface === 'desktop') {
+      const { grid, caption } = scene()
+      const { Box, Text, Svg } = $.ui.resolve(e)
+      const children = []
+      const speech = chat.pending && !isWorking ? '.'.repeat(1 + (step % 3)) : chat.bubble ? chat.bubble.text : ''
+      if (speech) {
+        children.push(
+          Box({
+            borderStyle: 'round',
+            borderColor: 'gray',
+            paddingX: 1,
+            flexShrink: 1,
+            children: [Text({ children: [bubbleLines(speech, BUBBLE_WIDTH, 3).join('\n')] })],
+          }),
+        )
+      } else if (caption) {
+        children.push(Text({ children: [caption], color: 'yellow', bold: true, wrap: 'truncate-start' }))
+      }
+      children.push(
+        Svg({
+          source: gridSvg(grid, DESKTOP_PIXEL_W, DESKTOP_PIXEL_H),
+          alt: 'Clawd',
+          width: grid[0].length * DESKTOP_PIXEL_W,
+          height: grid.length * DESKTOP_PIXEL_H,
+        }),
+      )
+      const ours = Box({ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-end', columnGap: 1, children })
+      const theirs = await next(e)
+      return theirs ? Box({ flexDirection: 'column', children: [ours, theirs] }) : ours
+    }
+    if (e.surface !== 'terminal') return next(e)
+    // Game mode takes the whole band, 8 rows, when it has them
+    if (game && !(typeof e.props.maxRows === 'number' && e.props.maxRows < GAME_ROWS)) {
+      const { Box, Client } = $.ui.resolve(e)
+      const columns = typeof e.props.bodyColumns === 'number' ? e.props.bodyColumns - 2 : 60
+      const ours = Box({
+        paddingRight: 2,
+        children: [
+          Client({
+            key: 'clawd-game',
+            module: './clawd-game.js',
+            props: { words: words.gameWords, hi: gameHi, jumps: gameJumps },
+            width: columns,
+            height: GAME_ROWS,
+          }),
+        ],
+      })
+      const theirs = await next(e)
+      return theirs ? Box({ flexDirection: 'column', children: [ours, theirs] }) : ours
+    }
     const { grid, caption } = scene()
     const rows = grid.length / 2
     // With too few rows left for the drawing, as when the chat pane sits above the prompt in a

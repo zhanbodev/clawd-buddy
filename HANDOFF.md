@@ -15,7 +15,7 @@
 
 ```
 clawd-buddy/
-├── .claude-plugin/plugin.json   清单:name=clawd-buddy, version 1.1.0;marketplace.json 让仓库成为插件市场
+├── .claude-plugin/plugin.json   清单:name=clawd-buddy, version 1.4.0;marketplace.json 让仓库成为插件市场
 ├── .claude-plugin/types/        Claude Code 加载时自动生成的类型声明,别手改
 ├── hooks/hooks.json             {"modules": ["./register.js"]}
 ├── hooks/clawd-view.js          Client 的显示模块:把 register.js 算好的每一帧画出来,并把点击告诉它
@@ -165,6 +165,7 @@ claude plugin validate ~/mods/clawd-buddy       # 静态校验:事件名、API �
 - 可以用 `CLAUDE_CONFIG_DIR=<临时目录> claude plugin marketplace add <本地仓库路径>` 加 `claude plugin install` 在隔离环境里试装,不碰真实设置。
 - 本机 `~/.claude/skills/clawd-buddy` 是指向本项目的软链接;如果再从市场安装,会出现两个同名插件,只留一个。
 - v1.0.0:2026-10-03 首个正式版,当时叫 clawd-spinner。
+- v1.4.0:**支持 Claude 桌面端**(Code 模式):卡片里是仿旧金山的像素海湾小城(`hooks/clawd-scene.js`),按本地时区(`date +%z`)分早上 / 中午 / 黄昏 / 夜晚，待机时钓鱼 / 玩电脑 / 浇花 / 睡觉，动画全用 SVG 的 SMIL,循环起点按时钟取负的 begin,重绘时接得上。桌面端加载不了 `Client` 模块(内容安全策略拦截),所以点不了 Clawd,只有原生 Button / Input 能交互;`prompt.edit` 用来实现"空输入框按空格跳"。**游戏模式**(`hooks/clawd-game.js`):规则共用，终端是 Client 本地跑(每帧整像素、按速度调帧间隔),桌面端是插件推进 + 自播放 6 秒的 SVG(障碍提前排在画面外、分数自己跳)。桌面端聊天面板单独排版。新命令 `/clawd game`、`/clawd scene`、`/clawd idle`。开发过程和取舍详见本地的 DEVLOG.md。
 - v1.3.1:haiku/sonnet/opus 聊天时带上整个会话的对话副本(`SCENE_CHARS` 4 万字),README 新增"设置默认的聊天模型"一节。
 - v1.3.0:`/clawd model` / `/clawd effort`(写回 `/config`,新增 `chatEffort`),聊天记录存进 `$.state`(切换模型后不丢),小屏时限制聊天面板高度给 Clawd 留位置、放不下就让位,气泡英文按空格折行。
 - v1.2.0:可以和 Clawd 聊天(`/clawd chat`、聊天面板、对话气泡、`chatModel` 配置)。
